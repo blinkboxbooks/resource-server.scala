@@ -43,7 +43,8 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params;([^/]*)/(.*)""".r) {
     time("request") {
-      val imageParams = getMatrixParams(multiParams("captures").head).getOrElse(halt(400, "Invalid parameters supplied"))
+      val captures = multiParams("captures")
+      val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameters supplied"))
       val width = imageParams.get("img:w").map(_.toInt)
       val height = imageParams.get("img:h").map(_.toInt)
       val quality = imageParams.get("img:q").map(_.toInt / 100.0f)
@@ -55,7 +56,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
         case "stretch" => Stretch
       }
       val resizeSettings = new ImageSettings(width, height, mode, quality)
-      val filename = multiParams("captures").drop(1).head
+      val filename = captures(1)
       logger.debug(s"Request for non-direct file access: $filename, settings=imageSettings")
       handleFileRequest(filename, resizeSettings)
     }

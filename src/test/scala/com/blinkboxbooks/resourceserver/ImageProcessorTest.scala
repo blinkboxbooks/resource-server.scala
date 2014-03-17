@@ -81,22 +81,29 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   ignore("Resize by stretching") {
+    // Specify sizes that give a different form factor then check the results.
     fail("TODO")
   }
 
   ignore("Resize jpeg to bigger than original") {
-    fail("TODO")
+    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(640)))
+    assert(output.size > 0)
+    checkImage(outputData, "jpeg", 640, 400)
+    checkImageContent(outputData, "/640x400.jpeg")
   }
 
   ignore("Resize png to bigger than original") {
+    processor.transform("png", pngImage, output, new ImageSettings(width = Some(640)))
+    assert(output.size > 0)
+    checkImage(outputData, "png", 640, 400)
+    checkImageContent(outputData, "/640x400.png")
+  }
+
+  ignore("Change jpeg quality settings only") {
     fail("TODO")
   }
 
   ignore("Transcode png to jpeg") {
-    fail("TODO")
-  }
-
-  ignore("Change jpeg quality settings only") {
     fail("TODO")
   }
 

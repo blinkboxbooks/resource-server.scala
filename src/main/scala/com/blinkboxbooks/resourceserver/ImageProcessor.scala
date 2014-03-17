@@ -7,7 +7,7 @@ import javax.imageio._
 import javax.imageio.stream._
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam
 
-abstract class ResizeMode
+sealed abstract class ResizeMode
 case object Scale extends ResizeMode
 case object Crop extends ResizeMode
 case object Stretch extends ResizeMode
@@ -59,7 +59,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
     }
 
     // Read the original image.
-    val originalImage = time("read image") { ImageIO.read(input) }
+    val originalImage = time("reading image") { ImageIO.read(input) }
     if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
     try {
@@ -80,7 +80,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
         writer.setOutput(new MemoryCacheImageOutputStream(output))
 
         // Write the output in the configured format.
-        time("write image") { writer.write(null, new IIOImage(resizedImage, null, null), imageParams) }
+        time("writing image") { writer.write(null, new IIOImage(resizedImage, null, null), imageParams) }
       } finally {
         resizedImage.flush()
       }
