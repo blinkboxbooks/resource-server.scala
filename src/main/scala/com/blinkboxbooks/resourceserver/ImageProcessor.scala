@@ -61,12 +61,9 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
       // Resize the image if requested. 
       val image = time("resize") {
         settings match {
-          case ImageSettings(Some(width), None, _, _) =>
-            Scalr.resize(originalImage, Method.BALANCED, Mode.FIT_TO_WIDTH, width, Scalr.OP_ANTIALIAS)
-          case ImageSettings(None, Some(height), _, _) =>
-            Scalr.resize(originalImage, Method.BALANCED, Mode.FIT_TO_HEIGHT, height, Scalr.OP_ANTIALIAS)
-          case ImageSettings(Some(width), Some(height), _, _) =>
-            Scalr.resize(originalImage, Method.BALANCED, resizeMode, width, height, Scalr.OP_ANTIALIAS)
+          case ImageSettings(Some(width), None, _, _) => resize(originalImage, Mode.FIT_TO_WIDTH, width)
+          case ImageSettings(None, Some(height), _, _) => resize(originalImage, Mode.FIT_TO_HEIGHT, height)
+          case ImageSettings(Some(width), Some(height), _, _) => resize(originalImage, resizeMode, width, height)
           case _ => originalImage
         }
       }
@@ -101,4 +98,11 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
       originalImage.flush()
     }
   }
+
+  private def resize(src: BufferedImage, mode: Mode, targetSize: Int) =
+    Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS)
+
+  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int) =
+    Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS)
+
 }
