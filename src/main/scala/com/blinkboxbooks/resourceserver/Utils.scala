@@ -2,6 +2,8 @@ package com.blinkboxbooks.resourceserver
 
 import org.apache.commons.codec.digest.DigestUtils
 import scala.tools.nsc.matching.Patterns
+import java.awt.image.BufferedImage
+import resource.Resource
 
 /**
  * The traditional bag o' stuff that doesn't quite fit in anywhere else.
@@ -24,8 +26,11 @@ object Utils {
     }
   }
 
-  def acceptedFormat(extension: String) = ACCEPTED_IMAGE_FORMATS.contains(extension.toLowerCase)
-  def producableFormat(extension: String) = PRODUCABLE_IMAGE_FORMATS.contains(extension.toLowerCase)
+  /** Make BufferedImages managed resources so they can be automatically flushed when no longer used. */
+  implicit def pooledConnectionResource[A <: BufferedImage] = new Resource[A] {
+    override def close(r: A) = r.flush()
+    override def toString = "Resource[java.awt.image.BufferedImage]"
+  }
 
   /**
    * @return the given path with container files (epubs, zips) referred to using
@@ -37,6 +42,9 @@ object Utils {
     // Add 'zip:' prefix if the path contains at least one archive file.
     if (updated == filename) filename else "zip:" + updated
   }
+
+  def acceptedFormat(extension: String) = ACCEPTED_IMAGE_FORMATS.contains(extension.toLowerCase)
+  def producableFormat(extension: String) = PRODUCABLE_IMAGE_FORMATS.contains(extension.toLowerCase)
 
   private val ACCEPTED_IMAGE_FORMATS = Set("png", "jpg", "jpeg", "gif", "svg", "tif", "tiff", "bmp")
   private val PRODUCABLE_IMAGE_FORMATS = Set("png", "jpg", "jpeg", "gif")

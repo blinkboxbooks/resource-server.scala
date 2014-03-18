@@ -8,6 +8,7 @@ import javax.imageio.stream._
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam
 import java.awt.image.BufferedImage
 import resource._
+import Utils._
 
 sealed abstract class ResizeMode
 case object Scale extends ResizeMode
@@ -49,35 +50,33 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
   override def transform(outputFileType: String, input: InputStream, output: OutputStream, settings: ImageSettings) {
 
     // Read the original image.
-    val originalImage = time("reading image") { ImageIO.read(input) }
-    if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
-    val resizeMode = settings.mode.getOrElse(Scale) match {
-      case Scale => Mode.AUTOMATIC
-      case Crop => Mode.AUTOMATIC
-      case Stretch => Mode.FIT_EXACT
-    }
+    for (originalImage <- managed(time("reading image") { ImageIO.read(input) })) {
+      if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
-    try {
-      // Resize the image if requested. 
-      val image = time("resize") {
-        settings match {
-          case ImageSettings(Some(width), None, _, _) => resize(originalImage, Mode.FIT_TO_WIDTH, width)
-          case ImageSettings(None, Some(height), _, _) => resize(originalImage, Mode.FIT_TO_HEIGHT, height)
-          case ImageSettings(Some(width), Some(height), _, _) => resize(originalImage, resizeMode, width, height)
-          case _ => originalImage
-        }
+      val resizeMode = settings.mode.getOrElse(Scale) match {
+        case Scale => Mode.AUTOMATIC
+        case Crop => Mode.AUTOMATIC
+        case Stretch => Mode.FIT_EXACT
       }
 
+      // Resize the image if requested. 
       // #TODO: May have to do cropping as a separate step?
+      for (
+        image <- managed(time("resize") {
+          settings match {
+            case ImageSettings(Some(width), None, _, _) => resize(originalImage, Mode.FIT_TO_WIDTH, width)
+            case ImageSettings(None, Some(height), _, _) => resize(originalImage, Mode.FIT_TO_HEIGHT, height)
+            case ImageSettings(Some(width), Some(height), _, _) => resize(originalImage, resizeMode, width, height)
+            case _ => originalImage
+          }
+        })
+      ) {
+        // Write the resulting image in the desired format.
 
-      // Write the resulting image in the desired format.
-      try {
-        // Get an image writer for the given file type.
         val writers = ImageIO.getImageWritersByFormatName(outputFileType)
         if (!writers.hasNext) throw new IllegalArgumentException(s"Unknown file type '$outputFileType'")
         val writer = writers.next
 
-        // Set output image parameters.
         val imageParams = writer.getDefaultWriteParam()
         if (settings.quality.isDefined && imageParams.canWriteCompressed()) {
           imageParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
@@ -86,16 +85,10 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
 
         val imageOutputStream = new MemoryCacheImageOutputStream(output)
         writer.setOutput(imageOutputStream)
-
-        // Write the output in the configured format.
         time("writing image") { writer.write(null, new IIOImage(image, null, null), imageParams) }
-        imageOutputStream.close()
 
-      } finally {
-        image.flush()
+        imageOutputStream.close()
       }
-    } finally {
-      originalImage.flush()
     }
   }
 
