@@ -95,32 +95,6 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
-  test("get VFS path") {
-    // Simple paths.
-    val simpleFile = "foo/bar/stuff.xml"
-    assert(getVfsPath(simpleFile) === simpleFile)
-    val epubFile = "/foo/bar/stuff.epub"
-    assert(getVfsPath(epubFile) === epubFile)
-    val topLevelEpubFile = "stuff.epub"
-    assert(getVfsPath(topLevelEpubFile) === topLevelEpubFile)
-
-    // Container paths.
-    assert(getVfsPath("foo/bar/stuff.epub/stuff.xml") === "zip:foo/bar/stuff.epub!/stuff.xml")
-    assert(getVfsPath("foo/bar/stuff.epub/dir/stuff.xml") === "zip:foo/bar/stuff.epub!/dir/stuff.xml")
-    assert(getVfsPath("foo/bar/stuff.EPUB/dir/stuff.xml") === "zip:foo/bar/stuff.EPUB!/dir/stuff.xml")
-    assert(getVfsPath("foo/bar/stuff.zip/stuff.xml") === "zip:foo/bar/stuff.zip!/stuff.xml")
-    assert(getVfsPath("foo/bar/stuff.ZIP/stuff.xml") === "zip:foo/bar/stuff.ZIP!/stuff.xml")
-
-    // Containers in containers.
-    assert(getVfsPath("foo/bar/stuff.zip/dir/file.zip") === "zip:foo/bar/stuff.zip!/dir/file.zip")
-    assert(getVfsPath("foo/bar/stuff.zip/dir/file.zip/inner.xml") === "zip:foo/bar/stuff.zip!/dir/file.zip!/inner.xml")
-    assert(getVfsPath("foo/bar/stuff.zip/dir/file.epub/inner.xml") === "zip:foo/bar/stuff.zip!/dir/file.epub!/inner.xml")
-
-    // Unsupported container extension.
-    val gzipPath = "foo/bar/stuff.gz/stuff.xml"
-    assert(getVfsPath(gzipPath) === gzipPath)
-  }
-
   test("get extension") {
     assert(fileExtension("foo.t") === Some("t"))
     assert(fileExtension("f.t") === Some("t"))

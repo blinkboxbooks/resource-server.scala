@@ -22,4 +22,15 @@ object Utils {
     case pos => (Some(filename.substring(pos + 1, filename.size).toLowerCase), None)
   }
 
+  /**
+   * @return the given path with container files (epubs, zips) referred to using
+   * VFS syntax, by appending a "!". E.g. "dir/foo.epub/some/file.html" => "zip:dir/foo.epub!/some/file.html".
+   */
+  def getVfsPath(filename: String) = {
+    // Add exclamation mark after .epub or .zip, except at the end of the path.
+    val updated = """(?i)(\.epub|\.zip)/""".r.replaceAllIn(filename, """$1!/""")
+    // Add 'zip:' prefix if the path contains at least one archive file.
+    if (updated == filename) filename else "zip:" + updated
+  }
+
 }

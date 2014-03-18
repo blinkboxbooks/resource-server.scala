@@ -19,6 +19,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import org.apache.commons.vfs2.cache.LRUFilesCache
 import org.apache.commons.vfs2.cache.SoftRefFilesCache
 import MatrixParameters._
+import Utils._
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -32,6 +33,20 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   private val dateTimeFormat = ISODateTimeFormat.dateTime()
   private val timeFormat = ISODateTimeFormat.time()
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
+  private val unchanged = new ImageSettings()
+
+  before() {
+    response.characterEncoding = None
+    val expiryTime = Duration.standardDays(365)
+    response.headers += ("expires_in" -> expiryTime.getStandardSeconds.toString)
+    response.headers += ("Cache-Control" -> s"public, max-age=${expiryTime.getStandardSeconds}")
+    val now = new DateTime()
+    response.headers += ("now" -> timeFormat.print(now))
+    response.headers += ("Date" -> dateTimeFormat.print(now))
+    response.headers += ("Expires" -> (now plus expiryTime).toString)
+    response.headers += ("X-Application-Version" -> "0.0.1")
+    response.headers += ("Access-Control-Allow-Origin" -> "*")
+  }
 
   /** Direct file access. */
   get("/*") {
@@ -62,20 +77,6 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     }
   }
 
-  before() {
-    response.characterEncoding = None
-    val expiryTime = Duration.standardDays(365)
-    response.headers += ("expires_in" -> expiryTime.getStandardSeconds.toString)
-    response.headers += ("Cache-Control" -> s"public, max-age=${expiryTime.getStandardSeconds}")
-    val now = new DateTime()
-    response.headers += ("now" -> timeFormat.print(now))
-    response.headers += ("Date" -> dateTimeFormat.print(now))
-    response.headers += ("Expires" -> (now plus expiryTime).toString)
-    if (response.status.code == 200) response.headers += ("ETag" -> uriHash(request.getRequestURI))
-    response.headers += ("X-Application-Version" -> "0.0.1")
-    response.headers += ("Access-Control-Allow-Origin" -> "*")
-  }
-
   /** Serve up file, by looking it up in a virtual filesystem and applying any transforms. */
   private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {
     if (filename.endsWith(".key")) {
@@ -91,6 +92,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     }
 
     contentType = mimeTypes.getContentType(filename.toString)
+    response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
     val input = file.get.getContent().getInputStream()
     val targetFileType = fileExtension(filename.toString).getOrElse(halt(400, s"Requested file '$filename' has no extension"))
@@ -113,7 +115,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
 object ResourceServlet {
 
-  /** Factory method for creating servlet. */
+  /** Factory method for creating a servlet backed by a file system. */
   def apply(rootDirectory: Path): ScalatraServlet = {
     // Create a file system manager that resolves paths in ePub and Zip files, 
     // as well as regular files.
@@ -127,26 +129,10 @@ object ResourceServlet {
     new ResourceServlet(fsManager, new SynchronousScalrImageProcessor())
   }
 
-  /** @return Hex string of MD5 hash for the given input. */
-  def uriHash(str: String) = DigestUtils.md5Hex(str) // TODO: Need to make sure this is 100% the same as Ruby's hashes!
-
-  /**
-   * @return the given path with container files (epubs, zips) referred to using
-   * VFS syntax, by appending a "!". E.g. "dir/foo.epub/some/file.html" => "zip:dir/foo.epub!/some/file.html".
-   */
-  def getVfsPath(filename: String) = {
-    // Add exclamation mark after .epub or .zip, except at the end of the path.
-    val updated = """(?i)(\.epub|\.zip)/""".r.replaceAllIn(filename, """$1!/""")
-    // Add 'zip:' prefix if the path contains at least one archive file.
-    if (updated == filename) filename else "zip:" + updated
-  }
-
   /** @return lower case file extension of given file name. */
   def fileExtension(filename: String) = filename.lastIndexOf(".") match {
     case -1 => None
     case pos => Some(filename.substring(pos + 1, filename.size).toLowerCase)
   }
-
-  val unchanged = new ImageSettings()
 
 }
