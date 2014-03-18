@@ -111,18 +111,42 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   test("Download GIF image with image settings") {
-    get("/params;v=0/test.epub/images/test.gif") {
+    get("/params;img:w=160;v=0/test.epub/images/test.gif") {
       assert(status === 200)
-      checkImage(response.inputStream, "gif", 320, 200)
       assert(header("Content-Type") === "image/gif")
+      checkImage(response.inputStream, "gif", 160, 100)
     }
   }
 
   test("Download PNG image with image settings") {
-    get("/params;v=0/test.epub/images/test.png") {
+    get("/params;img:w=160;v=0/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 160, 100)
+      assert(header("Content-Type") === "image/png")
+    }
+  }
+
+  test("Transform PNG image to JPEG") {
+    get("/params;v=0/test.epub/images/test.png.jpeg") {
+      assert(status === 200)
+      checkImage(response.inputStream, "jpeg", 320, 200)
+      assert(header("Content-Type") === "image/jpeg")
+    }
+  }
+
+  test("Transform JPEG image to PNG") {
+    get("/params;v=0/test.epub/images/test.jpeg.png") {
       assert(status === 200)
       checkImage(response.inputStream, "png", 320, 200)
       assert(header("Content-Type") === "image/png")
+    }
+  }
+
+  test("Transform JPEG image to GIF") {
+    get("/params;v=0/test.epub/images/test.jpeg.gif") {
+      assert(status === 200)
+      assert(header("Content-Type") === "image/gif")
+      checkImage(response.inputStream, "gif", 320, 200)
     }
   }
 

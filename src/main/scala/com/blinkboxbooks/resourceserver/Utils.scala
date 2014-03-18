@@ -1,6 +1,7 @@
 package com.blinkboxbooks.resourceserver
 
 import org.apache.commons.codec.digest.DigestUtils
+import scala.tools.nsc.matching.Patterns
 
 /**
  * The traditional bag o' stuff that doesn't quite fit in anywhere else.
@@ -12,15 +13,19 @@ object Utils {
 
   /**
    * @returns a pair of (original extension, target extension).
-   * The former represents the original extension of the file.
-   * The latter represents the target extension in a request for image conversion.
-   *
-   * @throws IllegalArgumentException if the given file name has no extension at all.
+   * The former contains the extension of the file (in lower case), if present, otherwise None.
+   * The latter contains the target extension (in lower case) in a request for image conversion, if requested, otherwise None.
    */
-  def fileExtension(filename: String): (Option[String], Option[String]) = filename.lastIndexOf(".") match {
-    case -1 => (None, None)
-    case pos => (Some(filename.substring(pos + 1, filename.size).toLowerCase), None)
+  def fileExtension(filename: String): (Option[String], Option[String]) = {
+    filename.split("\\.").reverse.toList match {
+      case ext2 :: ext1 :: filenamePart :: _ if acceptedFormat(ext1) && producableFormat(ext2) => (Some(ext1.toLowerCase), Some(ext2.toLowerCase))
+      case ext :: filenamePart :: _ => (Some(ext.toLowerCase), None)
+      case _ => (None, None)
+    }
   }
+
+  def acceptedFormat(extension: String) = ACCEPTED_IMAGE_FORMATS.contains(extension.toLowerCase)
+  def producableFormat(extension: String) = PRODUCABLE_IMAGE_FORMATS.contains(extension.toLowerCase)
 
   /**
    * @return the given path with container files (epubs, zips) referred to using
@@ -32,5 +37,8 @@ object Utils {
     // Add 'zip:' prefix if the path contains at least one archive file.
     if (updated == filename) filename else "zip:" + updated
   }
+
+  private val ACCEPTED_IMAGE_FORMATS = Set("png", "jpg", "jpeg", "gif", "svg", "tif", "tiff", "bmp")
+  private val PRODUCABLE_IMAGE_FORMATS = Set("png", "jpg", "jpeg", "gif")
 
 }

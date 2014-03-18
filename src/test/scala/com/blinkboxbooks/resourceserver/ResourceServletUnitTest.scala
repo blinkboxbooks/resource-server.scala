@@ -1,17 +1,15 @@
 package com.blinkboxbooks.resourceserver
 
 import org.junit.runner.RunWith
-import org.scalatest.mock.MockitoSugar
 import org.scalatra.test.scalatest.ScalatraSuite
-import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.junit.JUnitRunner
+import org.scalatest._
 import org.mockito.Mockito._
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.apache.commons.vfs2._
 import java.io._
-import org.scalatest.prop.Checkers
 
 /**
  * Unit tests for resource servlet.
@@ -48,11 +46,19 @@ class ResourceServletUnitTest extends ScalatraSuite
     addServlet(new ResourceServlet(fileSystemManager, imageProcessor), "/*")
   }
 
-  // Keep these - or just spy on the real image processor in the functional tests instead?
   test("Direct download of image file") {
     get("/test.jpeg") {
       assert(status === 200)
       verify(fileSystemManager).resolveFile("test.jpeg")
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Download file with different output format") {
+    get("/params;v=0/test/content/image.gif.png") {
+      assert(status === 200)
+      verify(fileSystemManager).resolveFile("test/content/image.gif")
+      verify(imageProcessor).transform(Matchers.eq("png"), any[InputStream], any[OutputStream], any[ImageSettings])
       verifyNoMoreInteractions(fileSystemManager, imageProcessor)
     }
   }
@@ -93,20 +99,6 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/todo") {
       fail("TODO")
     }
-  }
-
-  test("get extension") {
-    assert(fileExtension("foo.t") === Some("t"))
-    assert(fileExtension("f.t") === Some("t"))
-    assert(fileExtension("foo.html") === Some("html"))
-    assert(fileExtension("foo.Html") === Some("html"))
-    assert(fileExtension("foo.HTML") === Some("html"))
-    assert(fileExtension("foo.txt") === Some("txt"))
-    assert(fileExtension("foo.bar.txt") === Some("txt"))
-    assert(fileExtension("") === None)
-    assert(fileExtension("f") === None)
-    assert(fileExtension("foo") === None)
-    assert(fileExtension("foo-bar") === None)
   }
 
 }

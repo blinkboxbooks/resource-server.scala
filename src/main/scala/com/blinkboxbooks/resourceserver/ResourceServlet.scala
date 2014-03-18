@@ -18,6 +18,7 @@ import org.scalatra.util.io.copy
 import com.typesafe.scalalogging.slf4j.Logging
 import org.apache.commons.vfs2.cache.LRUFilesCache
 import org.apache.commons.vfs2.cache.SoftRefFilesCache
+import resource._
 import MatrixParameters._
 import Utils._
 
@@ -84,24 +85,26 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
       halt(404, "The requested resource does not exist here")
     }
 
-    val vfsPath = getVfsPath(filename)
+    val (originalExtension, targetExtension) = Utils.fileExtension(filename)
+    val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
+
+    val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
+    val vfsPath = getVfsPath(baseFilename)
     val file = Try(fileSystemManager.resolveFile(vfsPath))
     if (file.isFailure || !file.get.exists || !file.get.getType.equals(FileType.FILE)) {
-      logger.info(s"filename rejected as the file doesn't exist")
+      logger.info(s"Request for $filename rejected as the file doesn't exist")
       halt(404, "The requested resource does not exist here")
     }
 
-    contentType = mimeTypes.getContentType(filename.toString)
+    contentType = mimeTypes.getContentType("file." + targetFileType)
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-    val input = file.get.getContent().getInputStream()
-    val targetFileType = fileExtension(filename.toString).getOrElse(halt(400, s"Requested file '$filename' has no extension"))
-    if (imageSettings.hasSettings) {
-      time("transform") {
-        imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings)
+    for (input <- managed(file.get.getContent().getInputStream())) {
+      if (imageSettings.hasSettings || targetExtension.isDefined) {
+        time("transform") { imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings) }
+      } else {
+        time("direct write") { copy(input, response.getOutputStream) }
       }
-    } else {
-      copy(input, response.getOutputStream)
     }
   }
 
@@ -127,12 +130,6 @@ object ResourceServlet {
     fsManager.setBaseFile(rootDirectory.toFile)
 
     new ResourceServlet(fsManager, new SynchronousScalrImageProcessor())
-  }
-
-  /** @return lower case file extension of given file name. */
-  def fileExtension(filename: String) = filename.lastIndexOf(".") match {
-    case -1 => None
-    case pos => Some(filename.substring(pos + 1, filename.size).toLowerCase)
   }
 
 }
