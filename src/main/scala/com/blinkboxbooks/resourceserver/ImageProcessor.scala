@@ -36,7 +36,7 @@ trait ImageProcessor {
    *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param resizeSettings     Settings for the converted image.
    *
-   *  @throws IllegalArgumentException if the given filetype is unknown.
+   *  @throws Exception if the given filetype is unknown, or the requested image is too large.
    */
   def transform(fileType: String, input: InputStream, output: OutputStream, resizeSettings: ImageSettings)
 
@@ -72,9 +72,8 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
         })
       ) {
         // Write the resulting image in the desired format.
-
         val writers = ImageIO.getImageWritersByFormatName(outputFileType)
-        if (!writers.hasNext) throw new IllegalArgumentException(s"Unknown file type '$outputFileType'")
+        if (!writers.hasNext) throw new Exception(s"Unknown file type '$outputFileType'")
         val writer = writers.next
 
         val imageParams = writer.getDefaultWriteParam()

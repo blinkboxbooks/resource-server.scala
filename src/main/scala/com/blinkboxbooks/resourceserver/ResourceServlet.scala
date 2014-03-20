@@ -36,6 +36,8 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val unchanged = new ImageSettings()
 
+  val MAX_DIMENSION = 2500
+
   before() {
     response.characterEncoding = None
     val expiryTime = Duration.standardDays(365)
@@ -60,16 +62,21 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   get("""^\/params;([^/]*)/(.*)""".r) {
     time("request") {
       val captures = multiParams("captures")
-      val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameters supplied"))
-      val width = imageParams.get("img:w").map(_.toInt)
-      val height = imageParams.get("img:h").map(_.toInt)
-      val quality = imageParams.get("img:q").map(_.toInt / 100.0f)
-      if (quality.isDefined && (quality.get < 0.0 || quality.get > 1.0))
+      val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
+      val width = intParam(imageParams, "img:w")
+      if (width.isDefined && (width.get <= 0 || width.get > MAX_DIMENSION))
+        halt(400, s"Width must be between 1 and $MAX_DIMENSION, got ${width.get}")
+      val height = intParam(imageParams, "img:h")
+      if (height.isDefined && (height.get <= 0 || height.get > MAX_DIMENSION))
+        halt(400, s"Height must be between 1 and $MAX_DIMENSION, got ${height.get}")
+      val quality = intParam(imageParams, "img:q").map(_.toInt / 100.0f)
+      if (quality.isDefined && (quality.get <= 0.0 || quality.get > 1.0))
         halt(400, "Quality parameter must be between 0 and 100")
       val mode = imageParams.get("img:m") map {
         case "scale" | "scale!" => Scale
         case "crop" => Crop
         case "stretch" => Stretch
+        case m @ _ => invalidParameter("img:m", m)
       }
       val resizeSettings = new ImageSettings(width, height, mode, quality)
       val filename = captures(1)
@@ -77,6 +84,15 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
       handleFileRequest(filename, resizeSettings)
     }
   }
+
+  error {
+    case e => halt(500, "Unexpected error: " + e.getMessage)
+  }
+
+  private def intParam(parameters: Map[String, String], name: String): Option[Int] =
+    parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
+
+  private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
   /** Serve up file, by looking it up in a virtual filesystem and applying any transforms. */
   private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {

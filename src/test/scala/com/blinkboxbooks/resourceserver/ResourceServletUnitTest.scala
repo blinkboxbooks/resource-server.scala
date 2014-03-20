@@ -81,7 +81,6 @@ class ResourceServletUnitTest extends ScalatraSuite
 
   test("Download image with all available image settings") {
     get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;v=0/test.epub/test/content/images/test.jpeg") {
-      assert(status === 200)
       verify(fileSystemManager).resolveFile("zip:test.epub!/test/content/images/test.jpeg")
       val imageSettings = new ImageSettings(width = Some(160), height = Some(120), quality = Some(0.42f), mode = Some(Crop))
       verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream], Matchers.eq(imageSettings))
@@ -89,15 +88,49 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
-  ignore("Invalid image size") {
-    get("/todo") {
-      fail("TODO")
+  test("Invalid integer parameter") {
+    get("/params;v=0;img:w=16x/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*16x.*not.*valid.*value.*"))
+      // Should not have tried to do anything.
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
     }
   }
 
-  ignore("Give invalid image quality setting") {
-    get("/todo") {
-      fail("TODO")
+  test("Missing parameter") {
+    get("/params;v=0;img:w=/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*invalid.*"))
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Invalid image size") {
+    get("/params;v=0;img:w=2501/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*width.*2501.*"), body)
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Zero value for image size") {
+    get("/params;v=0;img:w=0/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*width.*0.*"))
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Give invalid image quality setting") {
+    get("/params;v=0;img:q=0/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*quality.*"))
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+    get("/params;v=0;img:q=101/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*quality.*"))
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
     }
   }
 

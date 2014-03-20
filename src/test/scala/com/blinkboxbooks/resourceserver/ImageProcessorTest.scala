@@ -38,7 +38,7 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   test("Unknown image format") {
-    intercept[IllegalArgumentException](processor.transform("invalid", jpegImage, output, new ImageSettings()))
+    intercept[Exception](processor.transform("invalid", jpegImage, output, new ImageSettings()))
   }
 
   def outputData = new ByteArrayInputStream(output.toByteArray())
@@ -112,8 +112,10 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
     checkImageContent(outputData, "/640x400.gif")
   }
 
-  ignore("Change jpeg quality settings only") {
-    fail("TODO")
+  test("Change jpeg quality settings only") {
+    processor.transform("jpeg", jpegImage, output, new ImageSettings(quality = Some(0.5f)))
+    checkImage(outputData, "jpeg", 320, 200)
+    checkImageContent(outputData, "/320x200.jpeg")
   }
 
 }
