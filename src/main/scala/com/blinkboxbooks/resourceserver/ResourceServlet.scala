@@ -86,7 +86,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   }
 
   error {
-    case e => halt(500, "Unexpected error: " + e.getMessage)
+    case e =>
+      logger.error("Expected error", e)
+      halt(500, "Unexpected error: " + e.getMessage)
   }
 
   private def intParam(parameters: Map[String, String], name: String): Option[Int] =
