@@ -47,7 +47,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   before {
     // Mount the servlet under test.
-    addServlet(ResourceServlet(rootDir.toPath()), "/*")
+    addServlet(ResourceServlet(rootDir.toPath(), None), "/*")
   }
 
   override def afterAll() {

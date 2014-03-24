@@ -22,6 +22,8 @@ import resource._
 import MatrixParameters._
 import Utils._
 import org.joda.time.format.DateTimeFormat
+import org.apache.commons.vfs2.impl.DefaultFileReplicator
+import java.io.File
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -139,13 +141,14 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(rootDirectory: Path): ScalatraServlet = {
+  def apply(rootDirectory: Path, tmpDir: Option[String]): ScalatraServlet = {
     // Create a file system manager that resolves paths in ePub and Zip files, 
     // as well as regular files.
     val fsManager = new DefaultFileSystemManager()
     fsManager.addProvider(Array("zip"), new ZipFileProvider())
     fsManager.addProvider(Array("file"), new DefaultLocalFileProvider())
     fsManager.setFilesCache(new SoftRefFilesCache())
+    tmpDir.foreach { d => fsManager.setTemporaryFileStore(new DefaultFileReplicator(new File(d))) }
     fsManager.init()
     fsManager.setBaseFile(rootDirectory.toFile)
 

@@ -20,9 +20,10 @@ class ScalatraBootstrap extends LifeCycle {
     if (!Files.isDirectory(rootDirectory)) {
       throw new ConfigException.BadPath(rootDirStr, "Root directory parameter must point to a valid directory")
     }
+    val tmpDirectory = if (config.hasPath("tmp.directory")) Some(config.getString("tmp.directory")) else None
 
     // Create and mount the resource servlet.
-    context.mount(ResourceServlet(rootDirectory), "/*")
+    context.mount(ResourceServlet(rootDirectory, tmpDirectory), "/*")
   }
 
 }
