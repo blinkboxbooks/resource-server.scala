@@ -46,7 +46,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     val now = new DateTime()
     response.headers += ("now" -> timeFormat.print(now))
     response.headers += ("Date" -> dateTimeFormat.print(now))
-    response.headers += ("Expires" -> (now plus expiryTime).toString)
+    response.headers += ("Expires" -> dateTimeFormat.print(now plus expiryTime))
     response.headers += ("X-Application-Version" -> "0.0.1")
     response.headers += ("Access-Control-Allow-Origin" -> "*")
   }
@@ -87,14 +87,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
   error {
     case e =>
-      logger.error("Expected error", e)
+      logger.error("Unexpected error", e)
       halt(500, "Unexpected error: " + e.getMessage)
   }
-
-  private def intParam(parameters: Map[String, String], name: String): Option[Int] =
-    parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
-
-  private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
   /** Serve up file, by looking it up in a virtual filesystem and applying any transforms. */
   private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {
@@ -115,6 +110,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     }
 
     contentType = mimeTypes.getContentType("file." + targetFileType)
+    response.headers += ("Content-location" -> request.getRequestURI) // Canonicalise this?
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
     for (input <- managed(file.get.getContent().getInputStream())) {
@@ -125,6 +121,11 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
       }
     }
   }
+
+  private def intParam(parameters: Map[String, String], name: String): Option[Int] =
+    parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
+
+  private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
   /**
    * The default Scalatra implementation treats everything after a semi-colon as request parameters,

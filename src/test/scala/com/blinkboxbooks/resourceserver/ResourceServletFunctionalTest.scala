@@ -54,6 +54,21 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     FileUtils.deleteDirectory(parentDir)
   }
 
+  test("Standard headers") {
+    get("sub/ch02.html") {
+      assert(status === 200)
+      checkIsCacheable()
+      assert(header("Content-Location") === ("/sub/ch02.html"))
+      val expectedExpiryTime = 365 * 24 * 60 * 60
+      assert(header("expires_in").toInt === expectedExpiryTime)
+      assert(header("Cache-Control") === s"public, max-age=$expectedExpiryTime")
+      assert(header("X-Application-Version").matches("""\d+\.\d+\.\d+"""))
+      assert(header("Access-Control-Allow-Origin") === "*")
+      assert(!header("now").isEmpty())
+      assert(!header("Date").isEmpty())
+    }
+  }
+
   test("Direct file access") {
     get("/ch01.html") {
       assert(status === 200)
