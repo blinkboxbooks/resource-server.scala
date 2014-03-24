@@ -21,6 +21,7 @@ import org.apache.commons.vfs2.cache.SoftRefFilesCache
 import resource._
 import MatrixParameters._
 import Utils._
+import org.joda.time.format.DateTimeFormat
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -31,7 +32,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
   import ResourceServlet._
 
-  private val dateTimeFormat = ISODateTimeFormat.dateTime()
+  private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z");
   private val timeFormat = ISODateTimeFormat.time()
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val unchanged = new ImageSettings()
@@ -87,11 +88,11 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
   error {
     case e =>
-      logger.error("Unexpected error", e)
+      logger.error("Unexpected error for request: " + request.getRequestURI, e)
       halt(500, "Unexpected error: " + e.getMessage)
   }
 
-  /** Serve up file, by looking it up in a virtual filesystem and applying any transforms. */
+  /** Serve up file, by looking it up in a virtual file system and applying any transforms. */
   private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {
     if (filename.endsWith(".key")) {
       logger.info(s"$filename rejected as I never send keyfiles")
