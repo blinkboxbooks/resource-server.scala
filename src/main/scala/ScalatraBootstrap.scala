@@ -1,13 +1,12 @@
 import java.nio.file.FileSystems
 import java.nio.file.Files
-
 import org.scalatra.LifeCycle
-
-import com.blinkboxbooks.resourceserver.ResourceServlet
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-
 import javax.servlet.ServletContext
+import scala.concurrent.duration._
+import com.blinkboxbooks.resourceserver.ResourceServlet
+import com.blinkboxbooks.resourceserver.TimeLoggingThresholds
 
 class ScalatraBootstrap extends LifeCycle {
 
@@ -22,8 +21,12 @@ class ScalatraBootstrap extends LifeCycle {
     }
     val tmpDirectory = if (config.hasPath("tmp.directory")) Some(config.getString("tmp.directory")) else None
 
+    val infoThreshold = Duration(config.getInt("logging.perf.threshold.info"), MILLISECONDS)
+    val warnThreshold = Duration(config.getInt("logging.perf.threshold.warn"), MILLISECONDS)
+    val errorThreshold = Duration(config.getInt("logging.perf.threshold.error"), MILLISECONDS)
+
     // Create and mount the resource servlet.
-    context.mount(ResourceServlet(rootDirectory, tmpDirectory), "/*")
+    context.mount(ResourceServlet(rootDirectory, tmpDirectory, infoThreshold, warnThreshold, errorThreshold), "/*")
   }
 
 }

@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import org.apache.commons.io.FileUtils
 import org.junit.runner.RunWith
+import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
 import org.scalatest.mock.MockitoSugar
@@ -47,7 +48,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   before {
     // Mount the servlet under test.
-    addServlet(ResourceServlet(rootDir.toPath(), None), "/*")
+    addServlet(ResourceServlet(rootDir.toPath(), None, 0 millis, 100 millis, 250 millis), "/*")
   }
 
   override def afterAll() {

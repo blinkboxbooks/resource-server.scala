@@ -1,29 +1,29 @@
 package com.blinkboxbooks.resourceserver
 
+import java.io.File
 import java.io.FileInputStream
 import java.nio.file._
 import javax.servlet.http.HttpServletRequest
 import javax.activation.MimetypesFileTypeMap
 import org.joda.time.format.ISODateTimeFormat
-import org.joda.time._
 import org.apache.commons.vfs2._
 import org.apache.commons.vfs2.impl.DefaultFileSystemManager
+import org.apache.commons.vfs2.impl.DefaultFileReplicator
 import org.apache.commons.vfs2.provider.zip.ZipFileProvider
 import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider
+import org.apache.commons.vfs2.cache.SoftRefFilesCache
 import org.apache.commons.codec.digest.DigestUtils
 import scala.util.{ Try, Success, Failure }
+import scala.concurrent.duration.Duration
 import org.scalatra.UriDecoder
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
 import com.typesafe.scalalogging.slf4j.Logging
-import org.apache.commons.vfs2.cache.LRUFilesCache
-import org.apache.commons.vfs2.cache.SoftRefFilesCache
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import resource._
 import MatrixParameters._
 import Utils._
-import org.joda.time.format.DateTimeFormat
-import org.apache.commons.vfs2.impl.DefaultFileReplicator
-import java.io.File
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -43,7 +43,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
   before() {
     response.characterEncoding = None
-    val expiryTime = Duration.standardDays(365)
+    val expiryTime = org.joda.time.Duration.standardDays(365)
     response.headers += ("expires_in" -> expiryTime.getStandardSeconds.toString)
     response.headers += ("Cache-Control" -> s"public, max-age=${expiryTime.getStandardSeconds}")
     val now = new DateTime()
@@ -118,9 +118,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
     for (input <- managed(file.get.getContent().getInputStream())) {
       if (imageSettings.hasSettings || targetExtension.isDefined) {
-        time("transform") { imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings) }
+        time("transform", Debug) { imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings) }
       } else {
-        time("direct write") { copy(input, response.getOutputStream) }
+        time("direct write", Debug) { copy(input, response.getOutputStream) }
       }
     }
   }
@@ -141,7 +141,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(rootDirectory: Path, tmpDir: Option[String]): ScalatraServlet = {
+  def apply(rootDirectory: Path, tmpDir: Option[String],
+    info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
+
     // Create a file system manager that resolves paths in ePub and Zip files, 
     // as well as regular files.
     val fsManager = new DefaultFileSystemManager()
@@ -152,7 +154,13 @@ object ResourceServlet {
     fsManager.init()
     fsManager.setBaseFile(rootDirectory.toFile)
 
-    new ResourceServlet(fsManager, new SynchronousScalrImageProcessor())
+    trait Thresholds extends TimeLoggingThresholds {
+      override def infoThreshold = info
+      override def warnThreshold = warning
+      override def errorThreshold = err
+    }
+
+    new ResourceServlet(fsManager, new SynchronousScalrImageProcessor()) with Thresholds
   }
 
 }

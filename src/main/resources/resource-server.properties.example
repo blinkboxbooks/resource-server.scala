@@ -1,1 +1,5 @@
 root.directory=/root/of/file/directory
+tmp.directory=/tmp
+logging.perf.threshold.info=0
+logging.perf.threshold.warn=150
+logging.perf.threshold.error=250

@@ -50,7 +50,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
   override def transform(outputFileType: String, input: InputStream, output: OutputStream, settings: ImageSettings) {
 
     // Read the original image.
-    for (originalImage <- managed(time("reading image") { ImageIO.read(input) })) {
+    for (originalImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
       if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
       val resizeMode = settings.mode.getOrElse(Scale) match {
@@ -62,7 +62,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
       // Resize the image if requested. 
       // #TODO: May have to do cropping as a separate step?
       for (
-        image <- managed(time("resize") {
+        image <- managed(time("resize", Debug) {
           settings match {
             case ImageSettings(Some(width), None, _, _) => resize(originalImage, Mode.FIT_TO_WIDTH, width)
             case ImageSettings(None, Some(height), _, _) => resize(originalImage, Mode.FIT_TO_HEIGHT, height)
@@ -84,7 +84,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
 
         val imageOutputStream = new MemoryCacheImageOutputStream(output)
         writer.setOutput(imageOutputStream)
-        time("writing image") { writer.write(null, new IIOImage(image, null, null), imageParams) }
+        time("writing image", Debug) { writer.write(null, new IIOImage(image, null, null), imageParams) }
 
         imageOutputStream.close()
       }
