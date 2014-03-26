@@ -65,7 +65,7 @@ Feature: Image resizing
     Examples: Supported image formats
       | format |
       | jpg    |
-      # | png    |
+      | png    |
 
   Scenario: Upscaled 'scale' is the default resize type
     Given an image with the following attributes exists on the resource server:

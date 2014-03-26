@@ -44,7 +44,7 @@ module KnowsHowToAlterImages
   end
 
   def compare_response_image(alter_source: {}, ensure_response_is_compressed: false)
-    pending "It looks as though my hamming checker may not be doing what I'm expecting!"
+    puts "It looks as though my hamming checker may not be doing what I'm expecting - don't trust this!"
     begin
       path_given = subject(:image)['local_path'] rescue nil
       source_file = Tempfile.new('source-image')
