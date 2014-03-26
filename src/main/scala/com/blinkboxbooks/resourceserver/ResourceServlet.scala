@@ -141,8 +141,8 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(rootDirectory: Path, tmpDir: Option[String],
-    info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
+  def apply(rootDirectory: Path, tmpDir: Option[File],
+    info: Duration, warning: Duration, err: Duration, numThreads: Int): ScalatraServlet = {
 
     // Create a file system manager that resolves paths in ePub and Zip files, 
     // as well as regular files.
@@ -150,7 +150,7 @@ object ResourceServlet {
     fsManager.addProvider(Array("zip"), new ZipFileProvider())
     fsManager.addProvider(Array("file"), new DefaultLocalFileProvider())
     fsManager.setFilesCache(new SoftRefFilesCache())
-    tmpDir.foreach { d => fsManager.setTemporaryFileStore(new DefaultFileReplicator(new File(d))) }
+    tmpDir.foreach { dir => fsManager.setTemporaryFileStore(new DefaultFileReplicator(dir)) }
     fsManager.init()
     fsManager.setBaseFile(rootDirectory.toFile)
 
@@ -160,7 +160,7 @@ object ResourceServlet {
       override def errorThreshold = err
     }
 
-    new ResourceServlet(fsManager, new SynchronousScalrImageProcessor()) with Thresholds
+    new ResourceServlet(fsManager, new ThreadPoolImageProcessor(numThreads)) with Thresholds
   }
 
 }

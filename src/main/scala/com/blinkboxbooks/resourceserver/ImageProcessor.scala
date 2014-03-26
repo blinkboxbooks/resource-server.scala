@@ -1,15 +1,20 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io._
-import org.imgscalr.Scalr
-import org.imgscalr.Scalr._
 import javax.imageio._
 import javax.imageio.stream._
-import javax.imageio.plugins.jpeg.JPEGImageWriteParam
 import java.awt.image.BufferedImage
 import resource._
 import Utils._
+import org.imgscalr.Scalr
+import org.imgscalr.Scalr._
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
+/** Types for each of the possible ways to resize an image. */
 sealed abstract class ResizeMode
 case object Scale extends ResizeMode
 case object Crop extends ResizeMode
@@ -25,6 +30,9 @@ case class ImageSettings(width: Option[Int] = None, height: Option[Int] = None,
   def hasSettings = width.isDefined || height.isDefined || quality.isDefined
 }
 
+/**
+ * Common interface for transforming images.
+ */
 trait ImageProcessor {
 
   /**
@@ -36,13 +44,22 @@ trait ImageProcessor {
    *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param resizeSettings     Settings for the converted image.
    *
-   *  @throws Exception if the given filetype is unknown, or the requested image is too large.
+   *  @throws Exception if the given filetype is unknown.
    */
   def transform(fileType: String, input: InputStream, output: OutputStream, resizeSettings: ImageSettings)
 
 }
 
-class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
+/**
+ * Implementation of image processor that uses the imgscalr AsyncScalr class to perform
+ * image processing in a thread pool with a limited number of threads.
+ */
+class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with TimeLogging {
+
+  // Execute conversions in a fixed size thread pool, to limit the number of concurrent jobs,
+  // hence guarding against running out of memory under heavy load.
+  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadCount))
+  implicit val timeout = 10 seconds
 
   // Disables disk caching for image files, makes reading image files faster.
   ImageIO.setUseCache(false)
@@ -51,6 +68,7 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
 
     // Read the original image.
     for (originalImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
+      
       if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
       val resizeMode = settings.mode.getOrElse(Scale) match {
@@ -85,16 +103,15 @@ class SynchronousScalrImageProcessor extends ImageProcessor with TimeLogging {
         val imageOutputStream = new MemoryCacheImageOutputStream(output)
         writer.setOutput(imageOutputStream)
         time("writing image", Debug) { writer.write(null, new IIOImage(image, null, null), imageParams) }
-
         imageOutputStream.close()
       }
     }
   }
 
   private def resize(src: BufferedImage, mode: Mode, targetSize: Int) =
-    Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS)
+    Await.result(Future { Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS) }, timeout)
 
   private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int) =
-    Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS)
+    Await.result(Future { Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS) }, timeout)
 
 }

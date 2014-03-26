@@ -2,7 +2,9 @@ package com.blinkboxbooks.resourceserver
 
 import java.io.File
 import java.nio.file.Files
+import javax.imageio.ImageIO
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfter
@@ -10,8 +12,6 @@ import org.scalatest.FunSuite
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.junit.JUnitRunner
 import org.scalatra.test.scalatest.ScalatraSuite
-import org.apache.commons.io.IOUtils
-import javax.imageio.ImageIO
 
 @RunWith(classOf[JUnitRunner])
 class ResourceServletFunctionalTest extends ScalatraSuite
@@ -20,7 +20,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   val KEY_FILE = "secret.key"
   val TOP_LEVEL_FILE = "toplevel.html"
 
-  val imageProcessor: ImageProcessor = new SynchronousScalrImageProcessor()
+  val imageProcessor: ImageProcessor = new ThreadPoolImageProcessor(1)
   var parentDir: File = _
   var rootDir: File = _
 
@@ -48,7 +48,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   before {
     // Mount the servlet under test.
-    addServlet(ResourceServlet(rootDir.toPath(), None, 0 millis, 100 millis, 250 millis), "/*")
+    addServlet(ResourceServlet(rootDir.toPath(), None, 0 millis, 100 millis, 250 millis, 1), "/*")
   }
 
   override def afterAll() {
