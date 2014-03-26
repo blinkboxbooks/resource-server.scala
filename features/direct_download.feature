@@ -11,6 +11,6 @@ Feature: Download stored files
 
   Scenario: Downloading a sample ePub directly
     Given a valid sample ePub exists on the resource server
-    When I request a direct download of that ePub
-    Then the response is that ePub
+    When I request a direct download of that sample ePub
+    Then the response is that sample ePub
     And it is publicly cacheable

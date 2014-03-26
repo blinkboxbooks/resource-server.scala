@@ -11,8 +11,8 @@ Feature: Access files from within ePubs
   Scenario Outline: I can access images from within an ePub
     Given a valid sample ePub with images exists on the resource server
     When I request a <image type> image from within that sample ePub
-    Then the response is that image
-    And it has the content type "<content type>"
+    Then the response is that <image type> image, or visually similar
+    And the "Content-Type" header is set to "<content type>"
 
     Examples: Supported image types
       | image type | content type |
@@ -30,8 +30,8 @@ Feature: Access files from within ePubs
   Scenario Outline: Correct content types
     Given a valid sample ePub with a range of files exists on the resource server
     When I request a <file type> file from within that sample ePub
-    Then the response is that file
-    And it has the content type "<content type>"
+    Then the response is that <file type> file
+    Then the "Content-Type" header is set to "<content type>"
 
     Examples: Files with important content types
       | file type | content type           |

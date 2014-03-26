@@ -5,10 +5,10 @@ Feature: Resumable downloads
 
   Scenario: Direct downloads of the end of an ePub
     Given a valid ePub exists on the resource server
-    When I request a direct download that ePub from a specific byte location onwards
+    When I request a direct download of that ePub from a specific byte location onwards
     Then I receive the correct bytes of that ePub
 
   Scenario: Processed downloads of the end of an ePub
     Given a valid ePub exists on the resource server
-    When I request a processed download that ePub from a specific byte location onwards
+    When I request a processed download of that ePub from a specific byte location onwards
     Then I receive the correct bytes of that ePub

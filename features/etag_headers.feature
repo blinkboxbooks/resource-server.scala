@@ -11,7 +11,7 @@ Feature: The resource server response includes an ETag header
 
   Scenario: Processed downloads have ETag headers
     Given a valid sample ePub exists on the resource server
-    When I request a processed download of that ePub
+    When I request a processed download of that sample ePub
     Then the "ETag" header is present
 
   Scenario: Files from within ePubs have ETag headers

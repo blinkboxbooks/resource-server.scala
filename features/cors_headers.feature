@@ -10,7 +10,7 @@ Feature: The resource server supports CORS requests
 
   Scenario: Processed downloads have CORS headers
     Given a valid sample ePub exists on the resource server
-    When I request a processed download of that ePub
+    When I request a processed download of that sample ePub
     Then the "Access-Control-Allow-Origin" header is set to "*"
 
   Scenario: Files from within ePubs have CORS headers

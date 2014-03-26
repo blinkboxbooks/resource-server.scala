@@ -5,5 +5,5 @@ Feature: Creates performance reports
 
   Scenario: Requesting an image creates performance details in the performance log
     Given an image exists on the resource server
-    When I request that image
+    When I request a direct download of that image
     Then there is a new line in the performance log

@@ -1,0 +1,48 @@
+# This file details information for data-dependent tests
+sample_epub:
+  is standard:
+    - local_path: book-9781782391203.sample.epub
+      isbn: "9781782391203"
+      internal_paths:
+        container xml: META-INF/container.xml
+        file: OEBPS/00_Cover.xhtml
+        jpg image: OEBPS/images/Cover.jpg
+  has images:
+    - local_path: book-9780111222333.sample.epub
+      isbn: "9780111222333"
+      internal_paths:
+        image: images/never.jpg
+        jpg image: images/never.jpg
+        jpeg image: images/gonna.jpeg
+        png image: images/give.png
+        gif image: images/you.gif
+        animated gif image: images/up.gif
+  has a range of files:
+    - local_path: book-9781782391203.sample.epub
+      isbn: "9781782391203"
+      internal_paths:
+        container xml: META-INF/container.xml
+        css file: OEBPS/ebook_style.css
+        file: OEBPS/00_Cover.xhtml
+        jpg image: OEBPS/images/Cover.jpg
+epub:
+  is standard:
+    - local_path: book-9781782391203.epub
+      isbn: "9781782391203"
+image:
+  is standard:
+    - local_path: book-9781782391203.png
+      isbn: "9781782391203"
+  has fine detail:
+    - local_path: testpattern.jpg
+      isbn: "5555555555555"
+  has a height of 2000, width of 1000:
+    - local_path: 2000x1000.jpg
+      isbn: "5555555555555"
+  has a height of 200, width of 100:
+    - local_path: 200x100.jpg
+      isbn: "5555555555555"
+book_key:
+  is standard:
+    - local_path: book-9781782391203.epub.9781782391203.key
+      isbn: "9781782391203"

@@ -5,9 +5,9 @@ Feature: Key files are never downloadable
   Scenario: Direct download for book keys are ignored
     Given a valid book key exists on the resource server
     When I request a direct download of that book key
-    Then the request fails beacuse the file is not found
+    Then the request fails because the file was not found
 
   Scenario: Processed download for book keys are ignored
     Given a valid book key exists on the resource server
     When I request a processed download of that book key
-    Then the request fails beacuse the file is not found
+    Then the request fails because the file was not found
