@@ -27,7 +27,7 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
     jpegImage = new ByteArrayInputStream(jpegData)
     pngImage = new ByteArrayInputStream(pngData)
     output = new ByteArrayOutputStream()
-    processor = new SynchronousScalrImageProcessor()
+    processor = new ThreadPoolImageProcessor(1)
   }
 
   test("No image settings given") {
