@@ -96,8 +96,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Tim
           settings match {
             case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FIT_TO_WIDTH, width)
             case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FIT_TO_HEIGHT, height)
-            case ImageSettings(Some(width), Some(height), Some(Stretch), _, gravity) => resize(originalImage, FIT_EXACT, width, height)
-            case ImageSettings(Some(width), Some(height), Some(Scale), _, gravity) => resize(originalImage, AUTOMATIC, width, height)
+            case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, FIT_EXACT, width, height)
+            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, AUTOMATIC, width, height)
             case ImageSettings(Some(width), Some(height), Some(Crop), _, gravity) =>
               // First resize to an image that retains the smallest dimension requested, the crop of the excess.
               val originalRatio = (originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth)
