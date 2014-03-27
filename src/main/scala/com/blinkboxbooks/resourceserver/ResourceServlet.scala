@@ -33,6 +33,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   extends ScalatraServlet with Logging with TimeLogging {
 
   import ResourceServlet._
+  import Gravity._
 
   private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z");
   private val timeFormat = ISODateTimeFormat.time()
@@ -82,7 +83,8 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
         case "stretch" => Stretch
         case m @ _ => invalidParameter("img:m", m)
       }
-      val imageSettings = new ImageSettings(width, height, mode, quality)
+      val gravity = gravityParam(imageParams, "img:g")
+      val imageSettings = new ImageSettings(width, height, mode, quality, gravity)
       val filename = captures(1)
       logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
       handleFileRequest(filename, imageSettings)
@@ -129,6 +131,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 
   private def intParam(parameters: Map[String, String], name: String): Option[Int] =
     parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
+
+  private def gravityParam(parameters: Map[String, String], name: String): Option[Gravity] =
+    parameters.get(name).map(str => Try(Gravity.withName(str)) getOrElse invalidParameter(name, str))
 
   private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 

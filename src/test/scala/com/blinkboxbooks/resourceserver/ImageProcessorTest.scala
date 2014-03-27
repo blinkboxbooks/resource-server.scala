@@ -18,104 +18,149 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
 
   import ImageProcessorTest._
 
-  var processor: ImageProcessor = _
-  var jpegImage: InputStream = _
-  var pngImage: InputStream = _
-  var output: ByteArrayOutputStream = _
+  val processor: ImageProcessor = new ThreadPoolImageProcessor(1)
 
-  before {
-    jpegImage = new ByteArrayInputStream(jpegData)
-    pngImage = new ByteArrayInputStream(pngData)
-    output = new ByteArrayOutputStream()
-    processor = new ThreadPoolImageProcessor(1)
-  }
+  def jpegImage = new ByteArrayInputStream(jpegData)
+  def pngImage = new ByteArrayInputStream(pngData)
+  def data(output: ByteArrayOutputStream) = new ByteArrayInputStream(output.toByteArray())
 
   test("No image settings given") {
     // Allow this, e.g. for trans-coding.
+    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings())
     assert(output.size > 0)
-    checkImage(outputData, "jpeg", 320, 200)
+    checkImage(data(output), "jpeg", 320, 200)
   }
 
   test("Unknown image format") {
-    intercept[Exception](processor.transform("invalid", jpegImage, output, new ImageSettings()))
+    intercept[Exception](processor.transform("invalid", jpegImage, new ByteArrayOutputStream(), new ImageSettings()))
   }
 
-  def outputData = new ByteArrayInputStream(output.toByteArray())
-
   test("Transform png") {
+    val output = new ByteArrayOutputStream()
     processor.transform("png", pngImage, output, new ImageSettings(Some(50), Some(40), Some(Scale), None))
     assert(output.size > 0)
-    // When scaling, the image ration is retained, hence the requested height isn't taken into account.
-    checkImage(outputData, "png", 50, 31)
-    checkImageContent(outputData, "/50x31.png")
+    // When scaling, the image ratio is retained, hence the requested height isn't taken into account.
+    checkImage(data(output), "png", 50, 31)
   }
 
   test("Try to specify quality setting for png file") {
-    processor.transform("png", pngImage, output, new ImageSettings(Some(50), Some(40), Some(Scale), Some(0.9f)))
+    val output = new ByteArrayOutputStream()
+    processor.transform("png", pngImage, output, new ImageSettings(width = Some(50), quality = Some(0.9f)))
     // Should just ignore the quality setting - for now at least.
-    checkImage(outputData, "png", 50, 31)
-    checkImageContent(outputData, "/50x31.png")
+    checkImage(data(output), "png", 50, 31)
   }
 
   test("Transform jpeg") {
-    processor.transform("jpeg", jpegImage, output, new ImageSettings(Some(50), Some(40), Some(Scale), Some(0.7f)))
+    val output = new ByteArrayOutputStream()
+    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50), quality = Some(0.7f)))
     assert(output.size > 0)
-    checkImage(outputData, "jpeg", 50, 31)
-    checkImageContent(outputData, "/50x31.jpeg")
+    checkImage(data(output), "jpeg", 50, 31)
   }
 
   test("Resize given width only") {
+    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50)))
-    checkImage(outputData, "jpeg", 50, 31)
-    checkImageContent(outputData, "/50x31.jpeg")
+    checkImage(data(output), "jpeg", 50, 31)
   }
 
   test("Resize given height only") {
-    // TODO: Need to figure out WTF the width is comes out so big here!
-    // I'm not correctly dealing with partial sizes only - original size will have an effect then.
+    val output = new ByteArrayOutputStream()
     processor.transform("png", pngImage, output, new ImageSettings(height = Some(50)))
-    checkImage(outputData, "png", 80, 50)
-    checkImageContent(outputData, "/80x50.jpeg")
-  }
-
-  ignore("Resize by cropping") {
-    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50), height = Some(50), mode = Some(Crop)))
-    checkImage(outputData, "jpeg", 50, 50)
-    checkImageContent(outputData, "/50x50cropped.jpeg")
+    checkImage(data(output), "png", 80, 50)
   }
 
   test("Resize by stretching") {
-    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50), height = Some(50), mode = Some(Stretch)))
-    checkImage(outputData, "jpeg", 50, 50)
-    checkImageContent(outputData, "/50x50stretched.jpeg")
+    // We should always get the requested size image back when stretching.
+    Seq((80, 50), (50, 50), (50, 20)).foreach {
+      case (w: Int, h: Int) =>
+        val output = new ByteArrayOutputStream()
+        processor.transform("jpeg", jpegImage, output,
+          new ImageSettings(width = Some(w), height = Some(h), mode = Some(Stretch)))
+        checkImage(data(output), "jpeg", w, h)
+    }
   }
 
-  test("Resize jpeg to bigger than original") {
-    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(640)))
-    assert(output.size > 0)
-    checkImage(outputData, "jpeg", 640, 400)
-    checkImageContent(outputData, "/640x400.jpeg")
+  test("Resize by cropping") {
+    // We should always get the requested size image back when cropping, irrespective of gravity setting.
+    Seq((80, 50), (50, 50), (20, 50)).foreach {
+      case (w: Int, h: Int) =>
+        for (g <- Gravity.values) {
+          val output = new ByteArrayOutputStream()
+          processor.transform("jpeg", jpegImage, output,
+            new ImageSettings(width = Some(w), height = Some(h), mode = Some(Crop), gravity = Some(g)))
+          checkImage(data(output), "jpeg", w, h)
+        }
+    }
   }
 
-  test("Resize png to bigger than original") {
-    processor.transform("png", pngImage, output, new ImageSettings(width = Some(640)))
-    assert(output.size > 0)
-    checkImage(outputData, "png", 640, 400)
-    checkImageContent(outputData, "/640x400.png")
+  test("Resize by scaling") {
+    // When scaling, we create an image that fits into the bounding box of the specified size, 
+    // that will be smaller when the aspect ratio of the original image and requested size is different.
+    Map(
+      (320, 200) -> (320, 200),
+      (640, 400) -> (640, 400),
+      (80, 70) -> (80, 50),
+      (50, 50) -> (50, 31),
+      (20, 50) -> (20, 13)).foreach {
+        case ((inputWidth, inputHeight), (outputWidth, outputHeight)) =>
+          val output = new ByteArrayOutputStream()
+          processor.transform("jpeg", jpegImage, output,
+            new ImageSettings(width = Some(inputWidth), height = Some(inputHeight), mode = Some(Scale)))
+          checkImage(data(output), "jpeg", outputWidth, outputHeight)
+      }
   }
 
   test("Convert image to GIF") {
+    val output = new ByteArrayOutputStream()
     processor.transform("gif", pngImage, output, new ImageSettings(width = Some(640)))
     assert(output.size > 0)
-    checkImage(outputData, "gif", 640, 400)
-    checkImageContent(outputData, "/640x400.gif")
+    checkImage(data(output), "gif", 640, 400)
   }
 
   test("Change jpeg quality settings only") {
+    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings(quality = Some(0.5f)))
-    checkImage(outputData, "jpeg", 320, 200)
-    checkImageContent(outputData, "/320x200.jpeg")
+    checkImage(data(output), "jpeg", 320, 200)
+  }
+
+  test("Crop positions using gravity") {
+    import Gravity._
+    import ThreadPoolImageProcessor._
+
+    // Cases where the height is unchanged.
+    assert(cropPosition(300, 200, 100, 200, Gravity.Center) === (100, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.North) === (100, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.South) === (100, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.East) === (200, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.NorthEast) === (200, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.SouthEast) === (200, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.SouthWest) === (0, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.West) === (0, 0))
+    assert(cropPosition(300, 200, 100, 200, Gravity.NorthWest) === (0, 0))
+
+    // Cases where the width is unchanged.
+    assert(cropPosition(200, 300, 200, 100, Gravity.North) === (0, 0))
+    assert(cropPosition(200, 300, 200, 100, Gravity.South) === (0, 200))
+    assert(cropPosition(200, 300, 200, 100, Gravity.East) === (0, 100))
+    assert(cropPosition(200, 300, 200, 100, Gravity.West) === (0, 100))
+    assert(cropPosition(200, 300, 200, 100, Gravity.Center) === (0, 100))
+    assert(cropPosition(200, 300, 200, 100, Gravity.NorthEast) === (0, 0))
+    assert(cropPosition(200, 300, 200, 100, Gravity.NorthWest) === (0, 0))
+    assert(cropPosition(200, 300, 200, 100, Gravity.SouthEast) === (0, 200))
+    assert(cropPosition(200, 300, 200, 100, Gravity.SouthWest) === (0, 200))
+
+    // Cases where both change.
+    assert(cropPosition(300, 300, 100, 100, Gravity.North) === (100, 0))
+    assert(cropPosition(300, 300, 100, 100, Gravity.South) === (100, 200))
+    assert(cropPosition(300, 300, 100, 100, Gravity.Center) === (100, 100))
+    assert(cropPosition(300, 300, 100, 100, Gravity.East) === (200, 100))
+    assert(cropPosition(300, 300, 100, 100, Gravity.West) === (0, 100))
+    assert(cropPosition(300, 300, 100, 100, Gravity.NorthEast) === (200, 0))
+    assert(cropPosition(300, 300, 100, 100, Gravity.NorthWest) === (0, 0))
+    assert(cropPosition(300, 300, 100, 100, Gravity.SouthEast) === (200, 200))
+    assert(cropPosition(300, 300, 100, 100, Gravity.SouthWest) === (0, 200))
+
   }
 
 }

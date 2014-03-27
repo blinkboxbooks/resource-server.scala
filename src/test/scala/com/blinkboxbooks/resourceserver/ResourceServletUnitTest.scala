@@ -80,9 +80,10 @@ class ResourceServletUnitTest extends ScalatraSuite
   }
 
   test("Download image with all available image settings") {
-    get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;v=0/test.epub/test/content/images/test.jpeg") {
+    get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;img:g=n;v=0/test.epub/test/content/images/test.jpeg") {
       verify(fileSystemManager).resolveFile("zip:test.epub!/test/content/images/test.jpeg")
-      val imageSettings = new ImageSettings(width = Some(160), height = Some(120), quality = Some(0.42f), mode = Some(Crop))
+      val imageSettings = new ImageSettings(
+        width = Some(160), height = Some(120), quality = Some(0.42f), mode = Some(Crop), gravity = Some(Gravity.North))
       verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream], Matchers.eq(imageSettings))
       verifyNoMoreInteractions(fileSystemManager, imageProcessor)
     }
@@ -93,6 +94,22 @@ class ResourceServletUnitTest extends ScalatraSuite
       assert(status === 400)
       assert(body.toLowerCase.matches(".*16x.*not.*valid.*value.*"))
       // Should not have tried to do anything.
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Invalid mode parameter") {
+    get("/params;v=0;img:m=foo/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*foo.*not.*valid.*value.*"))
+      verifyNoMoreInteractions(fileSystemManager, imageProcessor)
+    }
+  }
+
+  test("Invalid gravity parameter") {
+    get("/params;v=0;img:g=foo/test/content/image.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.matches(".*not.*valid.*img:g.*"))
       verifyNoMoreInteractions(fileSystemManager, imageProcessor)
     }
   }

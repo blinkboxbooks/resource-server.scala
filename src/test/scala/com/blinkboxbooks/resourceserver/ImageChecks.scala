@@ -15,12 +15,8 @@ trait ImageChecks {
     val iis = ImageIO.createImageInputStream(input)
     reader.setInput(iis)
     val image = reader.read(0)
-    assert(image.getWidth() === width)
-    assert(image.getHeight() === height)
-  }
-
-  def checkImageContent(bytes: InputStream, referenceFile: String) = {
-    //TODO!
+    assert(image.getWidth() === width, s"Got image of (${image.getWidth}, ${image.getHeight}), expected ($width, $height)")
+    assert(image.getHeight() === height, s"Got image of (${image.getWidth}, ${image.getHeight}), expected ($width, $height)")
   }
 
 }
