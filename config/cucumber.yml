@@ -1,0 +1,13 @@
+<% exclude_tags = " --tags ~@wip --tags ~@awaiting_fix --tags ~@unstable --tags ~@manual --tags ~@pending --tags ~@deprecated " %>
+<% ci_opts = " -r features --color --format progress -o results/progress.log --format junit -o results/junit/ --format json -o results/cucumber.json --format Cucumber::Formatter::HtmlCustomFormatter -o results/features_report.html --format pretty " %>
+
+default: -p terminal
+terminal: -r features --tags ~@awaiting_fix --tags ~@deprecated --tags ~@wip --tags ~@manual --no-multiline -i -s --format progress
+ci: -r features --tags ~@unstable --tags ~@pending --tags ~@awaiting_fix --tags ~@wip --tags ~@deprecated --tags ~@manual --no-color -o log/features.log --format junit -o log/ --format html -o log/features.html --format pretty
+wip: -r features --tags ~@deprecated --tags ~@manual --no-multiline -i -s --format pretty -t @wip
+dev: -r features --tags @dev --tags ~@deprecated --format pretty
+
+ci-smoke-backend-build: <%= ci_opts %> <%= exclude_tags %> --tags @smoke SERVER=BACKEND_BUILD_2 FAIL_FAST=true
+ci-smoke-qa: <%= ci_opts %>  <%= exclude_tags %> --tags @smoke SERVER=QA --strict
+ci-regression-qa: <%= ci_opts %>  <%= exclude_tags %> --tags ~@smoke SERVER=QA --strict
+ci-smoke-production: <%= ci_opts %>  <%= exclude_tags %> --tags @smoke --tags @production SERVER=PRODUCTION

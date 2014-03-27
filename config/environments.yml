@@ -1,0 +1,8 @@
+# This file details the various servers in each environment which tests for this service require.
+qa:
+  servers:
+    resource_server: https://internal-media.mobcastdev.com/
+
+local:
+  servers:
+    resource_server: http://127.0.0.1:5000/
