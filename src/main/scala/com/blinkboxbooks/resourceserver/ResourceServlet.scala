@@ -37,6 +37,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
   private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z");
   private val timeFormat = ISODateTimeFormat.time()
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
+  private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
   private val unchanged = new ImageSettings()
 
   val MAX_DIMENSION = 2500
@@ -81,10 +82,10 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
         case "stretch" => Stretch
         case m @ _ => invalidParameter("img:m", m)
       }
-      val resizeSettings = new ImageSettings(width, height, mode, quality)
+      val imageSettings = new ImageSettings(width, height, mode, quality)
       val filename = captures(1)
-      logger.debug(s"Request for non-direct file access: $filename, settings=imageSettings")
-      handleFileRequest(filename, resizeSettings)
+      logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
+      handleFileRequest(filename, imageSettings)
     }
   }
 
@@ -113,6 +114,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     }
 
     contentType = mimeTypes.getContentType("file." + targetFileType)
+    characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
     response.headers += ("Content-location" -> request.getRequestURI) // Canonicalise this?
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 

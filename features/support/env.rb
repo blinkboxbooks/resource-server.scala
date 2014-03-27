@@ -11,7 +11,7 @@ require "tempfile"
 require "mime-types"
 
 TEST_CONFIG = {}
-TEST_CONFIG["server"] = ENV["SERVER"] || "QA"
+TEST_CONFIG["server"] = ENV["SERVER"] || "local"
 TEST_CONFIG["proxy"] = ENV["PROXY_SERVER"]
 TEST_CONFIG["debug"] = !!(ENV["DEBUG"] =~ /^on|true$/i)
 TEST_CONFIG["fail_fast"] = !!(TEST_CONFIG["FAIL_FAST"] =~ /^on|true$/i)

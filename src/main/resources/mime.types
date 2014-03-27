@@ -3,4 +3,12 @@ image/gif                                       gif
 image/png                                       png
 image/svg+xml                                   svg svgz
 text/html                                       html htm
+application/xhtml+xml							xhtml
+application/xml									xml
 image/bmp										bmp
+text/css										css
+application/javascript							js
+application/json								json
+application/x-font-otf							otf
+application/oebps-package+xml					opf
+application/x-dtbncx+xml						ncx
