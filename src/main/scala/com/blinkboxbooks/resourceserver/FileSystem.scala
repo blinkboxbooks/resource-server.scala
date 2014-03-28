@@ -1,6 +1,29 @@
 package com.blinkboxbooks.resourceserver
 
+import org.apache.commons.vfs2.impl.DefaultFileSystemManager
+import java.nio.file.Path
+import java.io.File
+import org.apache.commons.vfs2.provider.zip.ZipFileProvider
+import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider
+import org.apache.commons.vfs2.impl.DefaultFileReplicator
+import org.apache.commons.vfs2.cache.SoftRefFilesCache
+
 object FileSystem {
+
+  /**
+   * Create a file system manager that resolves paths in ePub and Zip files,
+   * as well as regular files.
+   */
+  def createZipFileSystem(rootDirectory: Path, tmpDir: Option[File]) = {
+    val fsManager = new DefaultFileSystemManager()
+    fsManager.addProvider(Array("zip"), new ZipFileProvider())
+    fsManager.addProvider(Array("file"), new DefaultLocalFileProvider())
+    fsManager.setFilesCache(new SoftRefFilesCache())
+    tmpDir.foreach { dir => fsManager.setTemporaryFileStore(new DefaultFileReplicator(dir)) }
+    fsManager.init()
+    fsManager.setBaseFile(rootDirectory.toFile)
+    fsManager
+  }
 
   /**
    * @returns a pair of (original extension, target extension).

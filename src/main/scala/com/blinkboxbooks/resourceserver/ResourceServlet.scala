@@ -6,12 +6,8 @@ import java.nio.file._
 import javax.servlet.http.HttpServletRequest
 import javax.activation.MimetypesFileTypeMap
 import org.joda.time.format.ISODateTimeFormat
-import org.apache.commons.vfs2._
-import org.apache.commons.vfs2.impl.DefaultFileSystemManager
-import org.apache.commons.vfs2.impl.DefaultFileReplicator
-import org.apache.commons.vfs2.provider.zip.ZipFileProvider
-import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider
-import org.apache.commons.vfs2.cache.SoftRefFilesCache
+import org.apache.commons.vfs2.FileSystemManager
+import org.apache.commons.vfs2.FileType
 import org.apache.commons.codec.digest.DigestUtils
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
@@ -149,18 +145,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(rootDirectory: Path, tmpDir: Option[File],
-    info: Duration, warning: Duration, err: Duration, numThreads: Int): ScalatraServlet = {
-
-    // Create a file system manager that resolves paths in ePub and Zip files, 
-    // as well as regular files.
-    val fsManager = new DefaultFileSystemManager()
-    fsManager.addProvider(Array("zip"), new ZipFileProvider())
-    fsManager.addProvider(Array("file"), new DefaultLocalFileProvider())
-    fsManager.setFilesCache(new SoftRefFilesCache())
-    tmpDir.foreach { dir => fsManager.setTemporaryFileStore(new DefaultFileReplicator(dir)) }
-    fsManager.init()
-    fsManager.setBaseFile(rootDirectory.toFile)
+  def apply(fsManager: FileSystemManager, info: Duration, warning: Duration, err: Duration, numThreads: Int): ScalatraServlet = {
 
     trait Thresholds extends TimeLoggingThresholds {
       override def infoThreshold = info

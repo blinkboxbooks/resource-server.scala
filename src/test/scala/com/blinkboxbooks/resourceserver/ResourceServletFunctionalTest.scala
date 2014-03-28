@@ -47,8 +47,9 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   before {
+    val fs = FileSystem.createZipFileSystem(rootDir.toPath(), None)
     // Mount the servlet under test.
-    addServlet(ResourceServlet(rootDir.toPath(), None, 0 millis, 100 millis, 250 millis, 1), "/*")
+    addServlet(ResourceServlet(fs, 0 millis, 100 millis, 250 millis, 1), "/*")
   }
 
   override def afterAll() {
