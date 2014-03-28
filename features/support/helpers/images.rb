@@ -19,11 +19,13 @@ module KnowsHowToAlterImages
     commands = []
 
     case resize_method
-    when nil
+    when nil, "Scale"
       commands << ["-resize #{width}x#{height}"] if width || height
     when "Crop"
       gravity = GRAVITIES[attributes.delete('Gravity') || "C"]
       commands << "-thumbnail #{width}x#{height}^ -extent #{width}x#{height} -gravity #{gravity}"
+    when "Stretch"
+      commands << ["-resize #{width}x#{height}!"]
     end
 
     commands << "-format #{attributes.delete('Format')}" if attributes.has_key?('Format')
@@ -44,7 +46,6 @@ module KnowsHowToAlterImages
   end
 
   def compare_response_image(alter_source: {}, ensure_response_is_compressed: false)
-    puts "It looks as though my hamming checker may not be doing what I'm expecting - don't trust this!"
     begin
       path_given = subject(:image)['local_path'] rescue nil
       source_file = Tempfile.new('source-image')
@@ -63,17 +64,22 @@ module KnowsHowToAlterImages
       received_file.write HttpCapture::RESPONSES.last.body
       received_file.close
 
+      source_size = `identify "#{source_file.path}"`.scan(/\s(\d+)x(\d+)\s/).first
+      received_size = `identify "#{received_file.path}"`.scan(/\s(\d+)x(\d+)\s/).first
+
       source = Phashion::Image.new(source_file.path)
       received = Phashion::Image.new(received_file.path)
 
       begin
+        expect(received_size).to eq(source_size), "The received image is not the same size as the expected one (#{received_size.join('x')} should have been #{source_size.join('x')})"
         expect(received).to be_duplicate(source), "The received image is not similar enough to the source at the requested dimensions"
         expect(File.size(received_file.path)).to be < File.size(source_file.path) if ensure_response_is_compressed
       rescue
+        ext = File.extname(subject(:image)['local_path']) rescue ".bin"
         random = (0...8).map { (65 + rand(26)).chr }.join
-        FileUtils.cp(source_file.path, "/tmp/#{random}-source.bin")
-        FileUtils.cp(received_file.path, "/tmp/#{random}-received.bin")
-        puts "Please check /tmp/#{random}-*.bin"
+        FileUtils.cp(source_file.path, "/tmp/#{random}-source#{ext}")
+        FileUtils.cp(received_file.path, "/tmp/#{random}-received#{ext}")
+        puts "Please check /tmp/#{random}-*#{ext}"
         raise
       end
     ensure
