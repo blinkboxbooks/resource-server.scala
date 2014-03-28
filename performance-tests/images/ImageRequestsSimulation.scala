@@ -29,7 +29,7 @@ class ImageRequestsSimulation extends Simulation {
             .check(status.is(200)))
     }
 
-  setUp(scn.users(8).ramp(8).protocolConfig(httpConf))
+  setUp(scn.users(4).ramp(4).protocolConfig(httpConf))
 
   // Helper functions.
 

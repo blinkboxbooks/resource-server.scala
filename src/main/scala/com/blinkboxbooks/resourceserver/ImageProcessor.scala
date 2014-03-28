@@ -97,7 +97,6 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Tim
             case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FIT_TO_WIDTH, width)
             case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FIT_TO_HEIGHT, height)
             case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, FIT_EXACT, width, height)
-            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, AUTOMATIC, width, height)
             case ImageSettings(Some(width), Some(height), Some(Crop), _, gravity) =>
               // First resize to an image that retains the smallest dimension requested, the crop of the excess.
               val originalRatio = (originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth)
@@ -105,6 +104,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Tim
               val resizeMode = if (requestedRatio < originalRatio) FIT_TO_WIDTH else FIT_TO_HEIGHT
               val resized = resize(originalImage, resizeMode, width, height)
               crop(resized, width, height, gravity getOrElse Center)
+            case ImageSettings(Some(width), Some(height), _, _, _) => resize(originalImage, AUTOMATIC, width, height)
             case _ => originalImage
           }
         })

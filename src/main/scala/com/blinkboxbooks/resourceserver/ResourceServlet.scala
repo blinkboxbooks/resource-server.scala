@@ -24,6 +24,7 @@ import org.joda.time.format.DateTimeFormat
 import resource._
 import MatrixParameters._
 import Utils._
+import FileSystem._
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -104,7 +105,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
       halt(404, "The requested resource does not exist here")
     }
 
-    val (originalExtension, targetExtension) = Utils.fileExtension(filename)
+    val (originalExtension, targetExtension) = fileExtension(filename)
     val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
