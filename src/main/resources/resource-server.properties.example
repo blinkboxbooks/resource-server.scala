@@ -1,3 +1,7 @@
+# Configuration for the embedded web server used when run as a fat jar. 
+resource.server.port=8080
+resource.server.path=/
+
 # Root directory that files are served from.
 data_dir=/root/of/file/directory
 
