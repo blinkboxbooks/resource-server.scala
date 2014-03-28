@@ -49,4 +49,12 @@ end
 Then(/^I receive the correct bytes of that ePub$/) do
   local_path = File.join(__dir__,"../support/data", subject(:epub)['local_path'])
   expected_data = File.read(local_path)[subject(:start_byte)..-1]
+
+  if HttpCapture::RESPONSES.last.body.force_encoding('UTF-8') != expected_data.force_encoding('UTF-8')
+    random = (0...8).map { (65 + rand(26)).chr }.join
+    open("/tmp/#{random}-source.bin","w") { |f| f.write expected_data }
+    open("/tmp/#{random}-received.bin", "w") { |f| f.write HttpCapture::RESPONSES.last.body }
+    puts "Please check /tmp/#{random}-*.bin"
+    raise "The body of the response was not the same as the required byte range of the source"
+  end
 end
