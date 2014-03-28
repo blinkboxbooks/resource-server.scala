@@ -8,7 +8,7 @@ import ScalateKeys._
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks"
   val Name = "Resource Server"
-  val Version = "0.1.0-SNAPSHOT"
+  val Version = "0.1.0"
   val ScalaVersion = "2.10.3"
   val ScalatraVersion = "2.2.2"
 
@@ -43,19 +43,7 @@ object ResourceServerBuild extends Build {
         "commons-io" % "commons-io" % "2.4",
         "com.jsuereth" % "scala-arm_2.10" % "1.3"
         
-      ),
-      scalateTemplateConfig in Compile <<= (sourceDirectory in Compile){ base =>
-        Seq(
-          TemplateConfig(
-            base / "webapp" / "WEB-INF" / "templates",
-            Seq.empty,  /* default imports should be added here */
-            Seq(
-              Binding("context", "_root_.org.scalatra.scalate.ScalatraRenderContext", importMembers = true, isImplicit = true)
-            ),  /* add extra bindings here */
-            Some("templates")
-          )
-        )
-      }
+      )
     )
   )
 }
