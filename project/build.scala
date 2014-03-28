@@ -4,10 +4,11 @@ import org.scalatra.sbt._
 import org.scalatra.sbt.PluginKeys._
 import com.mojolly.scalate.ScalatePlugin._
 import ScalateKeys._
+import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks"
-  val Name = "Resource Server"
+  val Name = "resource-server"
   val Version = "0.1.0"
   val ScalaVersion = "2.10.3"
   val ScalatraVersion = "2.2.2"
@@ -21,12 +22,13 @@ object ResourceServerBuild extends Build {
       version := Version,
       scalaVersion := ScalaVersion,
       resolvers += Classpaths.typesafeReleases,
+      packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "." ),
+      EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource,
       libraryDependencies ++= Seq(
         "org.scalatra" %% "scalatra" % ScalatraVersion,
         "org.scalatra" %% "scalatra-scalate" % ScalatraVersion,
         "org.scalatra" %% "scalatra-specs2" % ScalatraVersion % "test",
         "org.scalatra" %% "scalatra-scalatest" % ScalatraVersion % "test",
-        "ch.qos.logback" % "logback-classic" % "1.0.6" % "runtime",
         "org.eclipse.jetty" % "jetty-webapp" % "8.1.8.v20121106" % "container;compile",
         "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container;provided;test" artifacts (Artifact("javax.servlet", "jar", "jar")),
         "com.typesafe" % "config" % "1.0.2",
@@ -42,7 +44,6 @@ object ResourceServerBuild extends Build {
         "commons-collections" % "commons-collections" % "3.1",
         "commons-io" % "commons-io" % "2.4",
         "com.jsuereth" % "scala-arm_2.10" % "1.3"
-        
       )
     )
   )
