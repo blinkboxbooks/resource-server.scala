@@ -7,13 +7,13 @@ import ScalateKeys._
 import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object ResourceServerBuild extends Build {
-  val Organization = "com.blinkboxbooks"
+  val Organization = "com.blinkboxbooks.platform.services"
   val Name = "resource-server"
-  val Version = "0.1.0"
+  val Version = "0.1.0.SNAPSHOT"
   val ScalaVersion = "2.10.3"
   val ScalatraVersion = "2.2.2"
 
-  lazy val project = Project (
+  lazy val project = Project(
     "resource-server",
     file("."),
     settings = Defaults.defaultSettings ++ ScalatraPlugin.scalatraWithJRebel ++ scalateSettings ++ Seq(
@@ -22,7 +22,17 @@ object ResourceServerBuild extends Build {
       version := Version,
       scalaVersion := ScalaVersion,
       resolvers += Classpaths.typesafeReleases,
-      packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "." ),
+      credentials += Credentials(Path.userHome / ".sbt" / ".nexus"),
+      publishTo := {
+        val nexus = "http://jenkins:m0bJenk@nexus.mobcast.co.uk/"
+        if (version.value.trim.endsWith("SNAPSHOT"))
+          Some("Sonatype Nexus Repository Manager" at nexus + "nexus/content/repositories/snapshots/")
+        else
+          Some("Sonatype Nexus Repository Manager" at nexus + "nexus/content/repositories/releases")
+      },
+      publishArtifact in (Compile, packageDoc) := false, // Don’t publish bits we don't care about.
+      publishArtifact in (Compile, packageSrc) := false,
+      packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "."),
       EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource,
       libraryDependencies ++= Seq(
         "org.scalatra" %% "scalatra" % ScalatraVersion,
@@ -39,12 +49,9 @@ object ResourceServerBuild extends Build {
         "joda-time"     % "joda-time" % "2.3",
         "junit"         % "junit" % "4.11" % "test",
         "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-        "org.imgscalr" % "imgscalr-lib" % "4.2",
+        "org.imgscalr"  % "imgscalr-lib" % "4.2",
         "org.apache.commons" % "commons-vfs2" % "2.0",
         "commons-collections" % "commons-collections" % "3.1",
         "commons-io" % "commons-io" % "2.4",
-        "com.jsuereth" % "scala-arm_2.10" % "1.3"
-      )
-    )
-  )
+        "com.jsuereth" % "scala-arm_2.10" % "1.3")))
 }
