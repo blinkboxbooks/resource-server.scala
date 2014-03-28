@@ -12,6 +12,8 @@ import org.scalatest.FunSuite
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.junit.JUnitRunner
 import org.scalatra.test.scalatest.ScalatraSuite
+import java.net.URLEncoder
+import org.scalatra.util.RicherString._
 
 @RunWith(classOf[JUnitRunner])
 class ResourceServletFunctionalTest extends ScalatraSuite
@@ -19,6 +21,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   val KEY_FILE = "secret.key"
   val TOP_LEVEL_FILE = "toplevel.html"
+  val FileTypes = List("png", "gif", "jpeg")
 
   val imageProcessor: ImageProcessor = new ThreadPoolImageProcessor(1)
   var parentDir: File = _
@@ -113,57 +116,33 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   test("Download image without image settings") {
-    get("/params;v=0/test.epub/images/test.png") {
-      assert(status === 200)
-      checkImage(response.inputStream, "png", 320, 200)
-      assert(header("Content-Type") === "image/png")
+    for (fileType <- FileTypes) {
+      get(s"/params;v=0/test.epub/images/test.$fileType") {
+        assert(status === 200)
+        checkImage(response.inputStream, fileType, 320, 200)
+        assert(header("Content-Type") === s"image/$fileType")
+      }
     }
   }
 
-  test("Download JPEG image with image settings") {
-    get("/params;img:w=160;v=0/test.epub/images/test.jpeg") {
-      assert(status === 200)
-      checkImage(response.inputStream, "jpeg", 160, 100)
+  test("Download image with image settings") {
+    for (fileType <- FileTypes) {
+      get(s"/params;img:w=160;v=0/test.epub/images/test.$fileType") {
+        assert(status === 200)
+        checkImage(response.inputStream, fileType, 160, 100)
+      }
     }
   }
 
-  test("Download GIF image with image settings") {
-    get("/params;img:w=160;v=0/test.epub/images/test.gif") {
-      assert(status === 200)
-      assert(header("Content-Type") === "image/gif")
-      checkImage(response.inputStream, "gif", 160, 100)
-    }
-  }
-
-  test("Download PNG image with image settings") {
-    get("/params;img:w=160;v=0/test.epub/images/test.png") {
-      assert(status === 200)
-      checkImage(response.inputStream, "png", 160, 100)
-      assert(header("Content-Type") === "image/png")
-    }
-  }
-
-  test("Transform PNG image to JPEG") {
-    get("/params;v=0/test.epub/images/test.png.jpeg") {
-      assert(status === 200)
-      checkImage(response.inputStream, "jpeg", 320, 200)
-      assert(header("Content-Type") === "image/jpeg")
-    }
-  }
-
-  test("Transform JPEG image to PNG") {
-    get("/params;v=0/test.epub/images/test.jpeg.png") {
-      assert(status === 200)
-      checkImage(response.inputStream, "png", 320, 200)
-      assert(header("Content-Type") === "image/png")
-    }
-  }
-
-  test("Transform JPEG image to GIF") {
-    get("/params;v=0/test.epub/images/test.jpeg.gif") {
-      assert(status === 200)
-      assert(header("Content-Type") === "image/gif")
-      checkImage(response.inputStream, "gif", 320, 200)
+  test("Transcode image") {
+    for (sourceFileType <- FileTypes) {
+      for (targetFileType <- FileTypes) {
+        get(s"/params;v=0/test.epub/images/test.$sourceFileType.$targetFileType") {
+          assert(status === 200)
+          checkImage(response.inputStream, targetFileType, 320, 200)
+          assert(header("Content-Type") === s"image/$targetFileType")
+        }
+      }
     }
   }
 
@@ -203,22 +182,40 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
-  ignore("Specify image quality setting for PNG file") {
-    get("/todo") {
-      fail("TODO")
+  test("Specify image quality setting for PNG file") {
+    get(s"/params;img:w=160;img:q=85;v=0/test.epub/images/test.png") {
+      // Should just ignore the quality setting.
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 160, 100)
     }
   }
 
-  ignore("Check against cross-site scripting attack") {
-    fail("TODO")
+  test("Check against cross-site scripting attack") {
+    val paths = List(
+      "/params;v=0;img:w=<script>alert('attacked')</script>/test.epub/images/test.jpeg",
+      "/params;v=0;img:h=<script>alert('attacked')</script>/test.epub/images/test.jpeg",
+      "/params;v=0;img:q=<script>alert('attacked')</script>/test.epub/images/test.jpeg",
+      "/params;v=0;img:m=<script>alert('attacked')</script>/test.epub/images/test.jpeg",
+      "/params;v=0;img:g=<script>alert('attacked')</script>/test.epub/images/test.jpeg")
+    for (path <- paths) {
+      get(path.urlEncode) {
+        assert(status === 400, s"Path '$path.urlEncode' should give a bad request error")
+        assert(!body.contains("<script>"), s"Error message for '$path.urlEncode' should not contain the unescaped input")
+      }
+    }
+
+    get("/dodgy-path-<script>alert('attacked')</script>.gif".urlEncode) {
+      assert(status === 404)
+      assert(!body.contains("<script>"))
+    }
   }
 
-  def checkContentMatches(testFile: String) {
+  private def checkContentMatches(testFile: String) {
     assert(IOUtils.contentEquals(response.inputStream, getClass.getResourceAsStream(testFile)),
       s"Content of response should match file '$testFile'")
   }
 
-  def checkIsCacheable() {
+  private def checkIsCacheable() {
     assert(header("Cache-Control").matches(".*max-age=\\d+.*"))
   }
 
