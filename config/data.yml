@@ -36,10 +36,10 @@ image:
   has fine detail:
     - local_path: testpattern.jpg
       isbn: "5555555555555"
-  has a height of 2000, width of 1000:
+  has a height of 1000, width of 2000:
     - local_path: 2000x1000.jpg
       isbn: "5555555555555"
-  has a height of 200, width of 100:
+  has a height of 100, width of 200:
     - local_path: 200x100.jpg
       isbn: "5555555555555"
 book_key:

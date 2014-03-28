@@ -19,11 +19,13 @@ module KnowsHowToAlterImages
     commands = []
 
     case resize_method
-    when nil
+    when nil, "Scale"
       commands << ["-resize #{width}x#{height}"] if width || height
     when "Crop"
       gravity = GRAVITIES[attributes.delete('Gravity') || "C"]
       commands << "-thumbnail #{width}x#{height}^ -extent #{width}x#{height} -gravity #{gravity}"
+    when "Stretch"
+      commands << ["-resize #{width}x#{height}!"]
     end
 
     commands << "-format #{attributes.delete('Format')}" if attributes.has_key?('Format')
@@ -69,7 +71,7 @@ module KnowsHowToAlterImages
       received = Phashion::Image.new(received_file.path)
 
       begin
-        expect(received_size).to eq(source_size), "The received image is not the same size as the expected one"
+        expect(received_size).to eq(source_size), "The received image is not the same size as the expected one (#{received_size.join('x')} should have been #{source_size.join('x')})"
         expect(received).to be_duplicate(source), "The received image is not similar enough to the source at the requested dimensions"
         expect(File.size(received_file.path)).to be < File.size(source_file.path) if ensure_response_is_compressed
       rescue
