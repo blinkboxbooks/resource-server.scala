@@ -109,19 +109,19 @@ Feature: Image resizing
       | Width  | 2000 |
       | Height | 1000 |
     When I request that image with the following filters:
-      | Image: Mode   | Scale   |
-      | Image: Width  | <width> |
-      | Image: Height | 1000    |
+      | Image: Mode   | Scale            |
+      | Image: Width  | 1000             |
+      | Image: Height | <request height> |
     Then the "Content-Location" header references this image with the following filters:
-      | Image: Mode   | Scale |
-      | Image: Width  | 500   |
-      | Image: Height | 1000  |
+      | Image: Mode   | Scale              |
+      | Image: Width  | 1000               |
+      | Image: Height | <resulting height> |
 
-    Examples: Widths 500 px or bigger that will make no difference to the output image in 'scale' mode
-      | width |
-      | 500   |
-      | 550   |
-      | 1000  |
+    Examples: Heights 500 px or bigger that will make no difference to the output image in 'scale' mode
+      | request height | resulting height |
+      | 500            | 500              |
+      | 550            | 500              |
+      | 1000           | 500              |
 
   Scenario: JPEG Image quality
     Given an image with fine detail exists on the resource server

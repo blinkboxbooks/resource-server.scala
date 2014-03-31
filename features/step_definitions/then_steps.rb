@@ -43,7 +43,8 @@ end
 
 Then(/^the "Content-Location" header references this image with the following filters:$/) do |table|
   params = { 'v' => 0 }.merge(parse_format_details(table.rows_hash))
-  expect(HttpCapture::RESPONSES.last['Content-location']).to start_with("/" + params_path(params) + "/")
+  expect(HttpCapture::RESPONSES.last['Content-Location']).to_not be_nil, "The Content-location header should be set"
+  expect(HttpCapture::RESPONSES.last['Content-Location']).to start_with("/" + params_path(params) + "/")
 end
 
 Then(/^I receive the correct bytes of that ePub$/) do
