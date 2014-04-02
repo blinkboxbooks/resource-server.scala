@@ -16,6 +16,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.apache.commons.lang3.concurrent.BasicThreadFactory
+import com.typesafe.scalalogging.slf4j.Logging
 
 /** Types for each of the possible ways to resize an image. */
 sealed abstract class ResizeMode
@@ -47,6 +49,8 @@ case class ImageSettings(width: Option[Int] = None, height: Option[Int] = None,
     throw new IllegalArgumentException("Quality setting must be between 0.0 and 1.0")
 
   def hasSettings = width.isDefined || height.isDefined || quality.isDefined
+
+  def maximumDimension = Seq(width, height).flatten.reduceOption(_ max _)
 }
 
 /**
@@ -73,11 +77,12 @@ trait ImageProcessor {
  * Implementation of image processor that uses the imgscalr AsyncScalr class to perform
  * image processing in a thread pool with a limited number of threads.
  */
-class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with TimeLogging {
+class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Logging with TimeLogging {
 
   // Execute conversions in a fixed size thread pool, to limit the number of concurrent jobs,
   // hence guarding against running out of memory under heavy load.
-  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadCount))
+  private val threadFactory = new BasicThreadFactory.Builder().namingPattern("image-resizing-%d").build()
+  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadCount, threadFactory))
   implicit val timeout = 10 seconds
 
   // Disables disk caching for image files, makes reading image files faster.

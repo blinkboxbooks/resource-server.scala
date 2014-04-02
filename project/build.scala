@@ -51,6 +51,7 @@ object ResourceServerBuild extends Build {
         "org.scalatest" %% "scalatest" % "1.9.1" % "test",
         "org.imgscalr"  % "imgscalr-lib" % "4.2",
         "org.apache.commons" % "commons-vfs2" % "2.0",
+        "org.apache.commons" % "commons-lang3" % "3.3.1",
         "commons-collections" % "commons-collections" % "3.1",
         "commons-io" % "commons-io" % "2.4",
         "com.jsuereth" % "scala-arm_2.10" % "1.3")))

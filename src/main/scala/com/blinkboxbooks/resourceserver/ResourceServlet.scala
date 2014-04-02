@@ -21,12 +21,15 @@ import resource._
 import MatrixParameters._
 import Utils._
 import FileSystem._
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
  * Image files can optionally be transformed, e.g. resized.
  */
-class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: ImageProcessor)
+class ResourceServlet(fileSystemManager: FileSystemManager,
+  imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
   extends ScalatraServlet with Logging with TimeLogging {
 
   import ResourceServlet._
@@ -105,11 +108,13 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
-    val vfsPath = getVfsPath(baseFilename)
-    val file = Try(fileSystemManager.resolveFile(vfsPath))
-    if (file.isFailure || !file.get.exists || !file.get.getType.equals(FileType.FILE)) {
-      logger.info(s"Request for $filename rejected as the file doesn't exist")
-      halt(404, "The requested resource does not exist here")
+
+    // Look for cached file if a smaller image has been requested.
+    val cachedFile = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
+    val file = cachedFile.getOrElse(getVfsFile(baseFilename))
+
+    if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
+      Future { cache.addImage(baseFilename, file) }(cacheingContext)
     }
 
     contentType = mimeTypes.getContentType("file." + targetFileType)
@@ -117,7 +122,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
     response.headers += ("Content-location" -> request.getRequestURI) // Canonicalise this?
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-    for (input <- managed(file.get.getContent().getInputStream())) {
+    for (input <- managed(file.getContent().getInputStream())) {
       if (imageSettings.hasSettings || targetExtension.isDefined) {
         time("transform", Debug) { imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings) }
       } else {
@@ -140,12 +145,26 @@ class ResourceServlet(fileSystemManager: FileSystemManager, imageProcessor: Imag
    */
   override def requestPath(implicit request: HttpServletRequest) = request.getRequestURI
 
+  /**
+   * Look up file in file system. Fail request if it's not found.
+   */
+  def getVfsFile(baseFilename: String) = {
+    val vfsPath = getVfsPath(baseFilename)
+    val file = Try(fileSystemManager.resolveFile(vfsPath))
+    if (file.isFailure || !file.get.exists || !file.get.getType.equals(FileType.FILE)) {
+      logger.info(s"Request for $baseFilename rejected as the file doesn't exist")
+      halt(404, "The requested resource does not exist here")
+    }
+    file.get
+  }
+
 }
 
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(fsManager: FileSystemManager, info: Duration, warning: Duration, err: Duration, numThreads: Int): ScalatraServlet = {
+  def apply(fsManager: FileSystemManager, cache: ImageCache, cacheingContext: ExecutionContext,
+    numResizingThreads: Int, info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
 
     trait Thresholds extends TimeLoggingThresholds {
       override def infoThreshold = info
@@ -153,7 +172,7 @@ object ResourceServlet {
       override def errorThreshold = err
     }
 
-    new ResourceServlet(fsManager, new ThreadPoolImageProcessor(numThreads)) with Thresholds
+    new ResourceServlet(fsManager, new ThreadPoolImageProcessor(numResizingThreads), cache, cacheingContext) with Thresholds
   }
 
 }

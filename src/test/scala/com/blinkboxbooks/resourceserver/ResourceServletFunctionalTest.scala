@@ -2,28 +2,30 @@ package com.blinkboxbooks.resourceserver
 
 import java.io.File
 import java.nio.file.Files
-import javax.imageio.ImageIO
+import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
-import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FunSuite
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
 import org.scalatra.test.scalatest.ScalatraSuite
-import java.net.URLEncoder
 import org.scalatra.util.RicherString._
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.Executor
+import TestUtils._
 
 @RunWith(classOf[JUnitRunner])
 class ResourceServletFunctionalTest extends ScalatraSuite
   with FunSuite with BeforeAndAfter with MockitoSugar with ImageChecks {
 
-  val KEY_FILE = "secret.key"
-  val TOP_LEVEL_FILE = "toplevel.html"
+  val KeyFile = "secret.key"
+  val TopLevelFile = "toplevel.html"
   val FileTypes = List("png", "gif", "jpeg")
 
   val imageProcessor: ImageProcessor = new ThreadPoolImageProcessor(1)
+  var imageCache: ImageCache = _
   var parentDir: File = _
   var rootDir: File = _
 
@@ -39,8 +41,11 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     val subdir = new File(rootDir, "sub")
     subdir.mkdir()
 
-    FileUtils.write(new File(parentDir, TOP_LEVEL_FILE), "Should not be accessible")
-    FileUtils.write(new File(rootDir, KEY_FILE), "Don't serve this up")
+    val cacheDir = new File(topLevel.toFile, "file-cache")
+    imageCache = new FileSystemImageCache(cacheDir, List(400, 900))
+
+    FileUtils.write(new File(parentDir, TopLevelFile), "Should not be accessible")
+    FileUtils.write(new File(rootDir, KeyFile), "Don't serve this up")
     FileUtils.write(new File(rootDir, "ch01.html"), "<p>It was a dark and stormy night...</p>")
     FileUtils.write(new File(subdir, "ch02.html"), "<p>and the wind was blowing a gale.</p>")
     FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/test.gif"), new File(rootDir, "test.gif"))
@@ -52,7 +57,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   before {
     val fs = FileSystem.createZipFileSystem(rootDir.toPath(), None)
     // Mount the servlet under test.
-    addServlet(ResourceServlet(fs, 0 millis, 100 millis, 250 millis, 1), "/*")
+    addServlet(ResourceServlet(fs, imageCache, directExecutionContext, 1, 0 millis, 100 millis, 250 millis), "/*")
   }
 
   override def afterAll() {
@@ -134,6 +139,18 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Repeatedly download resized image") {
+    // Repeatedly request files of different size that should hit the same cached image.
+    for (fileType <- FileTypes) {
+      for (size <- Seq(160, 100, 200)) {
+        get(s"/params;img:w=$size;v=0/test.epub/images/test.$fileType") {
+          assert(status === 200)
+          checkImage(response.inputStream, fileType, size)
+        }
+      }
+    }
+  }
+
   test("Transcode image") {
     for (sourceFileType <- FileTypes) {
       for (targetFileType <- FileTypes) {
@@ -153,13 +170,13 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   test("Try to get key file") {
-    get("/" + KEY_FILE) {
+    get("/" + KeyFile) {
       assert(status === 404)
     }
   }
 
   test("Try to get key file from inside an epub") {
-    get("/params;v=0/test.epub/test/" + KEY_FILE) {
+    get("/params;v=0/test.epub/test/" + KeyFile) {
       assert(status === 404)
     }
   }
@@ -177,7 +194,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   test("Try to access parent directory of root") {
-    get("/../" + TOP_LEVEL_FILE) {
+    get("/../" + TopLevelFile) {
       assert(status === 400)
     }
   }

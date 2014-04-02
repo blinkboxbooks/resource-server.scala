@@ -18,3 +18,8 @@ logging.perf.threshold.error=1000
 # Number of threads used for processing images.
 # If not set, will default to the number of available CPUs.
 #threads.count=8
+
+# Cache settings.
+cache.directory=/tmp
+# If not set, the following will default to the number of CPUs.
+#cache.threads.count=2

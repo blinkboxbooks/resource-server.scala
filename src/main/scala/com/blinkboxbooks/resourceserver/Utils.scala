@@ -4,6 +4,8 @@ import org.apache.commons.codec.digest.DigestUtils
 import scala.tools.nsc.matching.Patterns
 import java.awt.image.BufferedImage
 import resource.Resource
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.Executor
 
 /**
  * The traditional bag o' stuff that doesn't quite fit in anywhere else.
