@@ -24,7 +24,7 @@ class ImageRequestsSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
 
   val scn = scenario("get pseudo-random sequence of images")
-    .repeat(500) {
+    .repeat(5000) {
       feed(paths)
         .feed(sizes)
         .exec(

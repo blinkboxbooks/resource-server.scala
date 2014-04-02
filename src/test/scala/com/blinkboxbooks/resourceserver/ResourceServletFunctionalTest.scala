@@ -42,7 +42,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     subdir.mkdir()
 
     val cacheDir = new File(topLevel.toFile, "file-cache")
-    imageCache = new FileSystemImageCache(cacheDir, List(400, 900))
+    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900))
 
     FileUtils.write(new File(parentDir, TopLevelFile), "Should not be accessible")
     FileUtils.write(new File(rootDir, KeyFile), "Don't serve this up")

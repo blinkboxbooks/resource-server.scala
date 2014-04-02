@@ -21,7 +21,7 @@ import org.apache.commons.io.IOUtils
 @RunWith(classOf[JUnitRunner])
 class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks {
 
-  val sizes = List(100, 500, 1000)
+  val sizes = Set(500, 100, 1000)
   val filePath = "some/path/to/file/test.png"
   val fsManager = new DefaultFileSystemManager()
 
