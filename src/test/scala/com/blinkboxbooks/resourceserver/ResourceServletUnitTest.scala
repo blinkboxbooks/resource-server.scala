@@ -45,17 +45,6 @@ class ResourceServletUnitTest extends ScalatraSuite
     addServlet(new ResourceServlet(fileSystemManager, imageProcessor, imageCache, directExecutionContext), "/*")
   }
 
-  private def mockFile(text: String) = {
-    val file = mock[FileObject]
-    var content = mock[FileContent]
-    var testInputStream = new ByteArrayInputStream(text.getBytes)
-    doReturn(true).when(file).exists()
-    doReturn(FileType.FILE).when(file).getType()
-    doReturn(content).when(file).getContent()
-    doReturn(testInputStream).when(content).getInputStream()
-    file
-  }
-
   test("Direct download of image file") {
     get("/test.jpeg") {
       assert(status === 200)

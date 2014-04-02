@@ -17,9 +17,16 @@ import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider
 import org.apache.commons.vfs2.FileObject
 import org.imgscalr.Scalr
 import org.apache.commons.io.IOUtils
+import org.specs2.io.fs
+import org.apache.commons.vfs2.FileSystemManager
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
+import org.mockito.Matchers._
+import TestUtils._
+import java.io.OutputStream
 
 @RunWith(classOf[JUnitRunner])
-class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks {
+class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks with MockitoSugar {
 
   val sizes = Set(500, 100, 1000)
   val filePath = "some/path/to/file/test.png"
@@ -42,7 +49,7 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
 
   before {
     cacheDir = Files.createTempDirectory(getClass.getName).toFile
-    cache = new FileSystemImageCache(cacheDir, sizes)
+    cache = FileSystemImageCache(cacheDir, sizes)
   }
 
   after {
@@ -95,6 +102,23 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     for (width <- Seq(50, 99, 100)) {
       checkIsCached(width, 100)
     }
+  }
+
+  test("exception is thrown while writing cached file") {
+    val fs = mock[FileSystemManager]
+    val file = mockFile("Test")
+    val ex = new IOException("Test exception")
+    val outputStream = mock[OutputStream]
+    val content = file.getContent
+    doReturn(outputStream).when(content).getOutputStream()
+    doThrow(ex).when(outputStream).close()
+    doReturn(file).when(fs).resolveFile(anyString)
+
+    val cache = new FileSystemImageCache(cacheDir, sizes, fs)
+    intercept[IOException] { cache.addImage(filePath, getImage()) }
+    
+    // Check that the partially written file was deleted.
+    verify(file, times(2)).delete()
   }
 
   test("try to add invalid image file") {

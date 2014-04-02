@@ -19,6 +19,8 @@ import java.io.IOException
 import resource._
 import Utils._
 import scala.util.Try
+import org.apache.commons.vfs2.FileSystemManager
+import scala.util.control.NonFatal
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -48,17 +50,10 @@ trait ImageCache {
   def wouldCacheImage(size: Option[Int]): Boolean
 }
 
-class FileSystemImageCache(root: File, sizes: Set[Int]) extends ImageCache with Logging {
+class FileSystemImageCache(root: File, sizes: Set[Int], fs: FileSystemManager) extends ImageCache with Logging {
 
   // Ordered list of the sizes at which images are cached.
   val targetSizes = sizes.toList.sorted
-
-  // File manager for cached files.
-  val fs = new DefaultFileSystemManager()
-  fs.addProvider(Array("file"), new DefaultLocalFileProvider())
-  fs.setFilesCache(new SoftRefFilesCache())
-  fs.init()
-  fs.setBaseFile(root)
 
   override def addImage(path: String, content: FileObject) {
     logger.debug(s"Caching image at $path")
@@ -77,10 +72,16 @@ class FileSystemImageCache(root: File, sizes: Set[Int]) extends ImageCache with 
           outputFile.delete()
         }
         outputFile.createFile()
-        for (output <- managed(outputFile.getContent.getOutputStream())) {
-          writeFile(resized, output)
-          logger.debug("Wrote output file: " + outputFile + " with dimensions (" + resized.getWidth() + "[w], "
-            + resized.getHeight() + "[h])")
+        try {
+          for (output <- managed(outputFile.getContent.getOutputStream())) {
+            writeFile(resized, output)
+            logger.debug("Wrote output file: " + outputFile + " with dimensions (" + resized.getWidth() + "[w], "
+              + resized.getHeight() + "[h])")
+          }
+        } catch {
+          case NonFatal(e) =>
+            outputFile.delete()
+            throw e
         }
       }
     }
@@ -106,4 +107,18 @@ class FileSystemImageCache(root: File, sizes: Set[Int]) extends ImageCache with 
 
   private def cachedFilePath(path: String, size: Int) = s"${size}x${size}" + File.separator + path
 
+}
+
+object FileSystemImageCache {
+
+  def apply(root: File, sizes: Set[Int]) = {
+    // File manager for cached files.
+    val fs = new DefaultFileSystemManager()
+    fs.addProvider(Array("file"), new DefaultLocalFileProvider())
+    fs.setFilesCache(new SoftRefFilesCache())
+    fs.init()
+    fs.setBaseFile(root)
+
+    new FileSystemImageCache(root, sizes, fs)
+  }
 }

@@ -62,7 +62,7 @@ class ScalatraBootstrap extends LifeCycle with Logging {
 
     // Create and mount the resource servlet.
     context.mount(ResourceServlet(FileSystem.createZipFileSystem(dataDirectory, tmpDirectory),
-      new FileSystemImageCache(cacheDirectory, cachedFileSizes), cacheingExecutionContext, numThreads,
+      FileSystemImageCache(cacheDirectory, cachedFileSizes), cacheingExecutionContext, numThreads,
       infoThreshold, warnThreshold, errorThreshold), "/*")
   }
 
