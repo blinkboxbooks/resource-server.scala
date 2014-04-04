@@ -19,14 +19,18 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   import ImageProcessorTest._
 
   val processor: ImageProcessor = new ThreadPoolImageProcessor(1)
+  var output: ByteArrayOutputStream = _
 
   def jpegImage = new ByteArrayInputStream(jpegData)
   def pngImage = new ByteArrayInputStream(pngData)
   def data(output: ByteArrayOutputStream) = new ByteArrayInputStream(output.toByteArray())
 
+  before {
+      output = new ByteArrayOutputStream()
+  }
+  
   test("No image settings given") {
     // Allow this, e.g. for trans-coding.
-    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings())
     assert(output.size > 0)
     checkImage(data(output), "jpeg", 320, 200)
@@ -37,7 +41,6 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   test("Transform png") {
-    val output = new ByteArrayOutputStream()
     processor.transform("png", pngImage, output, new ImageSettings(Some(50), Some(40), Some(Scale), None))
     assert(output.size > 0)
     // When scaling, the image ratio is retained, hence the requested height isn't taken into account.
@@ -45,23 +48,30 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   test("Try to specify quality setting for png file") {
-    val output = new ByteArrayOutputStream()
     processor.transform("png", pngImage, output, new ImageSettings(width = Some(50), quality = Some(0.9f)))
     // Should just ignore the quality setting - for now at least.
     checkImage(data(output), "png", 50, 31)
   }
 
   test("Transform jpeg") {
-    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50), quality = Some(0.7f)))
     assert(output.size > 0)
     checkImage(data(output), "jpeg", 50, 31)
   }
 
   test("Resize given width only") {
-    val output = new ByteArrayOutputStream()
     processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(50)))
     checkImage(data(output), "jpeg", 50, 31)
+  }
+
+  test("Request resize to original size with no change in quality") {
+    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(320), height = Some(200)))
+    checkImage(data(output), "jpeg", 320, 200)
+  }
+
+  test("Request resize to original size with change in quality") {
+    processor.transform("jpeg", jpegImage, output, new ImageSettings(width = Some(320), height = Some(200), quality = Some(0.99f)))
+    checkImage(data(output), "jpeg", 320, 200)
   }
 
   test("Resize given height only") {

@@ -97,7 +97,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
 
       // Resize the image if a new size has been requested.
       for (
-        image <- managed(time("resize", Debug) {
+        image <- managed {
           settings match {
             case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FIT_TO_WIDTH, width)
             case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FIT_TO_HEIGHT, height)
@@ -112,7 +112,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
             case ImageSettings(Some(width), Some(height), _, _, _) => resize(originalImage, AUTOMATIC, width, height)
             case _ => originalImage
           }
-        })
+        }
       ) {
         // Convert the resulting image to the desired format.
         val writers = ImageIO.getImageWritersByFormatName(outputFileType)
@@ -135,12 +135,12 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
 
   private def resize(src: BufferedImage, mode: Mode, targetSize: Int) =
     Await.result(Future {
-      Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS)
+      time("resize", Debug) { Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS) }
     }, timeout)
 
   private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int) =
     Await.result(Future {
-      Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS)
+      time("resize", Debug) { Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS) }
     }, timeout)
 
   private def crop(src: BufferedImage, targetWidth: Int, targetHeight: Int, gravity: Gravity) = {

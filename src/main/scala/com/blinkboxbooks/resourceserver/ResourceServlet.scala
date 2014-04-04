@@ -121,7 +121,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 
     contentType = mimeTypes.getContentType("file." + targetFileType)
     characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-    response.headers += ("Content-location" -> request.getRequestURI) // Canonicalise this?
+    response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
     // Get input and output and skip and truncate results if requested.
@@ -140,6 +140,12 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
     }
   }
 
+  /**
+   * The default Scalatra implementation treats everything after a semi-colon as request parameters,
+   * we have to override this to cope with matrix parameters.
+   */
+  override def requestPath(implicit request: HttpServletRequest) = request.getRequestURI
+
   private def intParam(parameters: Map[String, String], name: String): Option[Int] =
     parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
 
@@ -149,15 +155,9 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
   private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
   /**
-   * The default Scalatra implementation treats everything after a semi-colon as request parameters,
-   * we have to override this to cope with matrix parameters.
-   */
-  override def requestPath(implicit request: HttpServletRequest) = request.getRequestURI
-
-  /**
    * Look up file in file system. Fail request if it's not found.
    */
-  def getVfsFile(baseFilename: String) = {
+  private def getVfsFile(baseFilename: String) = {
     val vfsPath = getVfsPath(baseFilename)
     val file = Try(fileSystemManager.resolveFile(vfsPath))
     if (file.isFailure || !file.get.exists || !file.get.getType.equals(FileType.FILE)) {

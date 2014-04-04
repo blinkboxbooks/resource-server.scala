@@ -161,7 +161,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
-  test("Invalid image size") {
+  test("Image size too large") {
     get("/params;v=0;img:w=2501/test/content/image.png") {
       assert(status === 400)
       assert(body.toLowerCase.matches(".*width.*2501.*"), body)
