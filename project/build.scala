@@ -28,6 +28,7 @@ object ResourceServerBuild extends Build {
         else
           Some("Sonatype Nexus Repository Manager" at nexus + "nexus/content/repositories/releases")
       },
+      mainClass in (Compile, packageBin) := Some("com.blinkboxbooks.resourceserver.JettyLauncher"),
       publishArtifact in (Compile, packageDoc) := false, // Don’t publish bits we don't care about.
       publishArtifact in (Compile, packageSrc) := false,
       packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "."),
