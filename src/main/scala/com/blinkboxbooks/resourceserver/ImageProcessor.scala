@@ -120,9 +120,10 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         val writer = writers.next
 
         val imageParams = writer.getDefaultWriteParam()
-        if (settings.quality.isDefined && imageParams.canWriteCompressed()) {
+        if (imageParams.canWriteCompressed()) {
           imageParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
-          imageParams.setCompressionQuality(settings.quality.get)
+          imageParams.setCompressionType(imageParams.getCompressionTypes()(0))
+          imageParams.setCompressionQuality(settings.quality getOrElse 0.85f)
         }
 
         val imageOutputStream = new MemoryCacheImageOutputStream(output)
