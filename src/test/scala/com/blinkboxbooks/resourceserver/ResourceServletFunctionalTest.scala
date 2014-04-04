@@ -237,7 +237,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
-    test("Get file inside epub file, with Range header") {
+  test("Get file inside epub file, with Range header") {
     get("/params;v=0/test.epub/images/test.png", headers = Map("Range" -> "bytes=100-")) {
       assert(status === 200)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test-epub/images/test.png")).length - 100

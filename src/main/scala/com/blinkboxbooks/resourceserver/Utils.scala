@@ -2,11 +2,8 @@ package com.blinkboxbooks.resourceserver
 
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.io.input.BoundedInputStream
-import java.awt.image.BufferedImage
-import java.util.concurrent.Executor
 import java.io.InputStream
-import scala.tools.nsc.matching.Patterns
-import scala.concurrent.ExecutionContext
+import java.awt.image.BufferedImage
 import scala.util.Try
 import resource.Resource
 
@@ -45,8 +42,10 @@ object Utils {
   }
 
   /**
-   * Get offset and limit based on parsing HTTP Range parameter.
-   * Only supports a single range.
+   * Get offset and limit based on parsing HTTP Range parameter as specified
+   * in RFC 2616.
+   * 
+   * This implementation only supports a single range.
    *
    * @returns (offset, limit). The offset is 0 if not specified, the limit is None of not specified,
    * as a limit of 0 has a different meaning to "no limit".

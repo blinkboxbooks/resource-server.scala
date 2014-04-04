@@ -126,8 +126,6 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 
     // Get input and output and skip and truncate results if requested.
     val inputStream = file.getContent().getInputStream()
-    //    byteRange.offset.foreach(offset => inputStream.skip(offset))
-    logger.debug(s"Byte range: $byteRange")
     val boundedInput = boundedInputStream(inputStream, byteRange)
 
     for (
