@@ -2,6 +2,33 @@
 
 An experimental implementation of a resource server written in Scala
 
+## Installation ##
+
+To install the resource server on a host, you need to perform the following steps:
+
+Get a copy of the JAR file that contains the version you want to install, called resource-server-assembly-n.n.n.jar.
+
+Create a configuration for the service by putting a properties file called "resource-server.properties" in the same location as the JAR file.
+There's [an example configuration here](src/main/resources/resource-server.properties.example) that you can use as a starting point.
+The following properties **must** be set:
+
+* data_dir (REQUIRED): This specifies the root directory that contains the files to be served up by the service.
+* cache.directory (REQUIRED): This specifies a directory that will contain a cache of smaller versions of images.
+* resource.server.port (REQUIRED): This specifies the port number on which the embedded web server listens.
+
+Additionally, you may want to set the following properties:
+
+* tmp.directory (OPTIONAL): This names the directory that will contain temporary files used internally by the service. If not set, this will
+default to the system tmp directory.
+* threads.count (OPTIONAL): This is the number of threads that will be used for handling image transformation requests (requests for images 
+that specify a specific format, resolution or quality). If not set, this will default to the number of CPUs reported by the JVM 
+on which the service runs.
+* cache.threads.count (OPTIONAL): This is the number of threads that will be used for handling background jobs for storing smaller versions
+of accessed images. If not set, this will default to the number of CPUs reported by the JVM 
+on which the service runs.
+* resource.server.path (REQUIRED): This is the base path of the servlet that handles resource requests. Should be left as "/"
+in normal cases.
+
 ## Build & Run ##
 
 Pre-requisite: Make sure you have sbt and Java 7 installed on your system and on your path.
