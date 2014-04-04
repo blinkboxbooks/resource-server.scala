@@ -49,7 +49,9 @@ end
 
 Then(/^I receive the correct bytes of that ePub$/) do
   local_path = File.join(__dir__,"../support/data", subject(:epub)['local_path'])
-  expected_data = File.read(local_path)[subject(:start_byte)..-1]
+  file = open(local_path)
+  file.pos = subject(:start_byte)
+  expected_data = file.read
 
   if HttpCapture::RESPONSES.last.body.force_encoding('UTF-8') != expected_data.force_encoding('UTF-8')
     random = (0...8).map { (65 + rand(26)).chr }.join

@@ -104,6 +104,8 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
       halt(404, "The requested resource does not exist here")
     }
 
+    val byteRange = Utils.range(Option(request.getHeader("Range")))
+
     val (originalExtension, targetExtension) = fileExtension(filename)
     val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
@@ -122,11 +124,20 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
     response.headers += ("Content-location" -> request.getRequestURI) // Canonicalise this?
     response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-    for (input <- managed(file.getContent().getInputStream())) {
+    // Get input and output and skip and truncate results if requested.
+    val inputStream = file.getContent().getInputStream()
+    //    byteRange.offset.foreach(offset => inputStream.skip(offset))
+    logger.debug(s"Byte range: $byteRange")
+    val boundedInput = boundedInputStream(inputStream, byteRange)
+
+    for (
+      inputStream <- managed(file.getContent().getInputStream());
+      boundedInput <- managed(boundedInputStream(inputStream, byteRange))
+    ) {
       if (imageSettings.hasSettings || targetExtension.isDefined) {
-        time("transform", Debug) { imageProcessor.transform(targetFileType, input, response.getOutputStream, imageSettings) }
+        time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
       } else {
-        time("direct write", Debug) { copy(input, response.getOutputStream) }
+        time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
       }
     }
   }

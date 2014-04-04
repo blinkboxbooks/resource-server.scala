@@ -227,6 +227,26 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Direct file access with Range header") {
+    get("/test.png", headers = Map("Range" -> "bytes=100-")) {
+      assert(status === 200)
+      val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length - 100
+      assert(bodyBytes.size === expectedSize)
+      assert(header.get("Content-Length") === Some(expectedSize.toString))
+      checkIsCacheable()
+    }
+  }
+
+    test("Get file inside epub file, with Range header") {
+    get("/params;v=0/test.epub/images/test.png", headers = Map("Range" -> "bytes=100-")) {
+      assert(status === 200)
+      val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test-epub/images/test.png")).length - 100
+      assert(bodyBytes.size === expectedSize)
+      assert(header.get("Content-Length") === Some(expectedSize.toString))
+      checkIsCacheable()
+    }
+  }
+
   private def checkContentMatches(testFile: String) {
     assert(IOUtils.contentEquals(response.inputStream, getClass.getResourceAsStream(testFile)),
       s"Content of response should match file '$testFile'")
