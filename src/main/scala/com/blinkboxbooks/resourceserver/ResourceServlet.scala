@@ -113,29 +113,30 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 
     // Look for cached file if a smaller image has been requested.
     val cachedFile = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
-    val file = cachedFile.getOrElse(getVfsFile(baseFilename))
+    for (file <- managed(cachedFile.getOrElse(getVfsFile(baseFilename)))) {
 
-    if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
-      Future { cache.addImage(baseFilename, file) }(cacheingContext)
-    }
+      if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
+        Future { cache.addImage(baseFilename, file) }(cacheingContext)
+      }
 
-    contentType = mimeTypes.getContentType("file." + targetFileType)
-    characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-    response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
-    response.headers += ("ETag" -> stringHash(request.getRequestURI))
+      contentType = mimeTypes.getContentType("file." + targetFileType)
+      characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
+      response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
+      response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-    // Get input and output and skip and truncate results if requested.
-    val inputStream = file.getContent().getInputStream()
-    val boundedInput = boundedInputStream(inputStream, byteRange)
+      // Get input and output and skip and truncate results if requested.
+      val inputStream = file.getContent().getInputStream()
+      val boundedInput = boundedInputStream(inputStream, byteRange)
 
-    for (
-      inputStream <- managed(file.getContent().getInputStream());
-      boundedInput <- managed(boundedInputStream(inputStream, byteRange))
-    ) {
-      if (imageSettings.hasSettings || targetExtension.isDefined) {
-        time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
-      } else {
-        time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
+      for (
+        inputStream <- managed(file.getContent().getInputStream());
+        boundedInput <- managed(boundedInputStream(inputStream, byteRange))
+      ) {
+        if (imageSettings.hasSettings || targetExtension.isDefined) {
+          time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
+        } else {
+          time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
+        }
       }
     }
   }

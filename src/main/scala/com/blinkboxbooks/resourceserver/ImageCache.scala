@@ -64,11 +64,12 @@ class FileSystemImageCache(root: File, sizes: Set[Int], fs: FileSystemManager) e
       if (image == null) throw new IOException(s"Unable to decode image at $path")
       for (
         size <- targetSizes;
-        resized <- managed(Scalr.resize(image, Method.BALANCED, Mode.AUTOMATIC, size))
+        resized <- managed(Scalr.resize(image, Method.BALANCED, Mode.AUTOMATIC, size));
+        val outputPath = cachedFilePath(path, size);
+        outputFile <- managed(fs.resolveFile(outputPath))
       ) {
-        val outputPath = cachedFilePath(path, size)
-        val outputFile = fs.resolveFile(outputPath)
         if (outputFile.exists) {
+          logger.debug(s"Deleting existing file: $outputFile")
           outputFile.delete()
         }
         outputFile.createFile()

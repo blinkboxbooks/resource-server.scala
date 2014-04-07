@@ -49,6 +49,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/test.jpeg") {
       assert(status === 200)
       verify(fileSystemManager).resolveFile("test.jpeg")
+      verify(file).close()
       verifyNoMoreInteractions(fileSystemManager, imageProcessor, imageCache)
     }
   }
@@ -66,6 +67,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/params;v=0/test.epub/test/content/intro.html") {
       assert(status === 200)
       verify(fileSystemManager).resolveFile("zip:test.epub!/test/content/intro.html")
+      verify(file).close()
       verifyNoMoreInteractions(fileSystemManager, imageProcessor, imageCache)
     }
   }
