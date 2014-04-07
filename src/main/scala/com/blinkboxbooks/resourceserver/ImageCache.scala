@@ -88,19 +88,20 @@ class FileSystemImageCache(root: File, sizes: Set[Int], fs: FileSystemManager) e
     }
   }
 
-  override def getImage(path: String, minSize: Int): Option[FileObject] = {
+  override def getImage(path: String, minSize: Int): Option[FileObject] =
     for (
       suitableCachedSize <- targetSizes.find(_ >= minSize);
       cachedPath <- Some(cachedFilePath(path, suitableCachedSize));
       file <- Try(fs.resolveFile(cachedPath)).toOption if (file.exists)
     ) yield file
-  }
 
   override def wouldCacheImage(size: Option[Int]) = size.isDefined && size.get <= targetSizes.max
 
   private def writeFile(image: BufferedImage, output: OutputStream) {
-    val writer = ImageIO.getImageWritersByFormatName("png").next()
-    for (imageOutputStream <- managed(new MemoryCacheImageOutputStream(output))) {
+    for (
+      writer <- managed(ImageIO.getImageWritersByFormatName("png").next());
+      imageOutputStream <- managed(new MemoryCacheImageOutputStream(output))
+    ) {
       writer.setOutput(imageOutputStream)
       writer.write(image)
     }
