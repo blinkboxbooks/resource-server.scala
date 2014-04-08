@@ -48,9 +48,9 @@ object ResourceServerBuild extends Build {
         "junit"         % "junit" % "4.11" % "test",
         "org.scalatest" %% "scalatest" % "1.9.1" % "test",
         "org.imgscalr"  % "imgscalr-lib" % "4.2",
-        "org.apache.commons" % "commons-vfs2" % "2.0",
         "org.apache.commons" % "commons-lang3" % "3.3.1",
         "commons-collections" % "commons-collections" % "3.1",
         "commons-io" % "commons-io" % "2.4",
+        "com.google.jimfs" % "jimfs" % "1.0-rc1" % "test",
         "com.jsuereth" % "scala-arm_2.10" % "1.3")))
 }

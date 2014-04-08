@@ -62,7 +62,8 @@ class EpubEnabledFileResolver(root: String) extends FileResolver with Logging {
 
   private def zipFile(rootPath: String, epubPath: String): (FileSystem, String) = {
     val env = Map("create" -> "true").asJava
-    val uri = URI.create(s"jar:file:$rootPath/$epubPath");
+    val uri = URI.create(s"jar:file:$rootPath/$epubPath")
+    //    val path = Paths.get(rootPath).resolve(epubPath)
     (FileSystems.newFileSystem(uri, env), "/")
   }
 }

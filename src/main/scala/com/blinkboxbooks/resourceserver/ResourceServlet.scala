@@ -6,11 +6,11 @@ import java.nio.file._
 import javax.servlet.http.HttpServletRequest
 import javax.activation.MimetypesFileTypeMap
 import org.joda.time.format.ISODateTimeFormat
-import org.apache.commons.vfs2.FileSystemManager
-import org.apache.commons.vfs2.FileType
 import org.apache.commons.codec.digest.DigestUtils
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import org.scalatra.UriDecoder
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
@@ -21,14 +21,12 @@ import resource._
 import MatrixParameters._
 import Utils._
 import FileSystem._
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
  * Image files can optionally be transformed, e.g. resized.
  */
-class ResourceServlet(fileSystemManager: FileSystemManager,
+class ResourceServlet(resolver: FileResolver,
   imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
   extends ScalatraServlet with Logging with TimeLogging {
 
@@ -106,37 +104,31 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 
     val byteRange = Utils.range(Option(request.getHeader("Range")))
 
-    val (originalExtension, targetExtension) = fileExtension(filename)
+    val (originalExtension, targetExtension) = fileExtension(filename) 
     val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
 
     // Look for cached file if a smaller image has been requested.
     val cachedFile = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
-    for (file <- managed(cachedFile.getOrElse(getVfsFile(baseFilename)))) {
+    val path = cachedFile.getOrElse(getFile(resolver.resolve(baseFilename)))
 
-      if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
-        Future { cache.addImage(baseFilename, file) }(cacheingContext)
-      }
+    if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
+      Future { cache.addImage(baseFilename, path) }(cacheingContext)
+    }
 
-      contentType = mimeTypes.getContentType("file." + targetFileType)
-      characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-      response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
-      response.headers += ("ETag" -> stringHash(request.getRequestURI))
+    contentType = mimeTypes.getContentType("file." + targetFileType)
+    characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
+    response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
+    response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-      // Get input and output and skip and truncate results if requested.
-      val inputStream = file.getContent().getInputStream()
+    // Get input and output and skip and truncate results if requested.
+    for (inputStream <- managed(Files.newInputStream(path))) {
       val boundedInput = boundedInputStream(inputStream, byteRange)
-
-      for (
-        inputStream <- managed(file.getContent().getInputStream());
-        boundedInput <- managed(boundedInputStream(inputStream, byteRange))
-      ) {
-        if (imageSettings.hasSettings || targetExtension.isDefined) {
-          time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
-        } else {
-          time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
-        }
+      if (imageSettings.hasSettings || targetExtension.isDefined) {
+        time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
+      } else {
+        time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
       }
     }
   }
@@ -155,17 +147,11 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 
   private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
-  /**
-   * Look up file in file system. Fail request if it's not found.
-   */
-  private def getVfsFile(baseFilename: String) = {
-    val vfsPath = getVfsPath(baseFilename)
-    val file = Try(fileSystemManager.resolveFile(vfsPath))
-    if (file.isFailure || !file.get.exists || !file.get.getType.equals(FileType.FILE)) {
-      logger.info(s"Request for $baseFilename rejected as the file doesn't exist")
+  private def getFile(file: Try[Path]) = file match {
+    case Success(path) => path
+    case Failure(e) =>
+      logger.info("Request for rejected as the file doesn't exist: " + e.getMessage)
       halt(404, "The requested resource does not exist here")
-    }
-    file.get
   }
 
 }
@@ -173,7 +159,7 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
 object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
-  def apply(fsManager: FileSystemManager, cache: ImageCache, cacheingContext: ExecutionContext,
+  def apply(resolver: FileResolver, cache: ImageCache, cacheingContext: ExecutionContext,
     numResizingThreads: Int, info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
 
     trait Thresholds extends TimeLoggingThresholds {
@@ -182,7 +168,7 @@ object ResourceServlet {
       override def errorThreshold = err
     }
 
-    new ResourceServlet(fsManager, new ThreadPoolImageProcessor(numResizingThreads), cache, cacheingContext) with Thresholds
+    new ResourceServlet(resolver, new ThreadPoolImageProcessor(numResizingThreads), cache, cacheingContext) with Thresholds
   }
 
 }

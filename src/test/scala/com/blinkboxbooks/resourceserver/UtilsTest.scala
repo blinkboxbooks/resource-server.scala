@@ -79,4 +79,38 @@ class UtilsTest extends FunSuite {
     }
   }
 
+  test("get extension for filenames with no format conversion") {
+    assert(fileExtension("foo.t") === (Some("t"), None))
+    assert(fileExtension("f.t") === (Some("t"), None))
+    assert(fileExtension("foo.html") === (Some("html"), None))
+    assert(fileExtension("foo.Html") === (Some("html"), None))
+    assert(fileExtension("foo.HTML") === (Some("html"), None))
+    assert(fileExtension("foo.txt") === (Some("txt"), None))
+    assert(fileExtension("foo.bar.txt") === (Some("txt"), None))
+  }
+
+  test("get extension for filenames with no extension") {
+    assert(fileExtension("") === (None, None))
+    assert(fileExtension("f") === (None, None))
+    assert(fileExtension("foo") === (None, None))
+    assert(fileExtension("foo.") === (None, None))
+    assert(fileExtension("foo-bar") === (None, None))
+  }
+
+  test("get extension for filenames with format conversion") {
+    assert(fileExtension("x.jpg.png") === (Some("jpg"), Some("png")))
+    assert(fileExtension("foo.jpg.png") === (Some("jpg"), Some("png")))
+    assert(fileExtension("foo.bar.jpg.png") === (Some("jpg"), Some("png")))
+
+    assert(fileExtension("foo.jpeg.png") === (Some("jpeg"), Some("png")))
+    assert(fileExtension("foo.png.jpeg") === (Some("png"), Some("jpeg")))
+    assert(fileExtension("foo.jpeg.gif") === (Some("jpeg"), Some("gif")))
+    assert(fileExtension("foo.gif.jpeg") === (Some("gif"), Some("jpeg")))
+    assert(fileExtension("foo.JPEG.GIF") === (Some("jpeg"), Some("gif")))
+
+    // What about these cases - what's an extension and what's not? Only known extensions?
+    // Or suitably short extensions?
+    assert(fileExtension("foo.bar.png") === (Some("png"), None))
+  }
+
 }
