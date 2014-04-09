@@ -14,6 +14,9 @@ import com.typesafe.scalalogging.slf4j.Logging
 import java.nio.file.LinkOption
 import java.nio.file.AccessDeniedException
 import java.nio.file.NoSuchFileException
+import java.io.FilterInputStream
+import org.apache.commons.io.input.ProxyInputStream
+import org.apache.commons.io.IOUtils
 
 trait FileResolver {
 
@@ -51,8 +54,16 @@ class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
     val zipFile = new ZipFile(resolvedPath(epubPath).toFile)
     val entries = zipFile.entries.asScala
     val entry = entries.find(e => e.getName == filePath)
-    entry.map(e => zipFile.getInputStream(e))
+    val inputStream = entry.map(e => zipFile.getInputStream(e))
       .getOrElse(throw new NoSuchFileException(s"No file '$filePath' in file '$epubPath'"))
+
+    // Return a wrapped stream that closes the enclosing Zip file when closed.
+    new ProxyInputStream(inputStream) {
+      override def close() = {
+        IOUtils.closeQuietly(zipFile)
+        super.close()
+      }
+    }
   }
 
   /** Look up path below root, and check we can't access directories above the root directory. */
