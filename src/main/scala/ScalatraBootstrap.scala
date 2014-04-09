@@ -45,7 +45,7 @@ class ScalatraBootstrap extends LifeCycle with Logging {
     val warnThreshold = Duration(config.getInt("logging.perf.threshold.warn"), MILLISECONDS)
     val errorThreshold = Duration(config.getInt("logging.perf.threshold.error"), MILLISECONDS)
 
-    // TODO: Make this configurable?
+    // Not making this configurable at the moment, as this should only change after careful consideration!
     val cachedFileSizes = Set(400, 900)
 
     val cacheingThreadCount =

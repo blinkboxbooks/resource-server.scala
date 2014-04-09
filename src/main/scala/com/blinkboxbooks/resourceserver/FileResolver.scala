@@ -26,8 +26,7 @@ trait FileResolver {
 }
 
 /**
- * Class that knows how to resolve regular files, as well as files inside epub files,
- * that is: files with an .epub extension, which are treated as Zip files.
+ * Class that knows how to resolve regular files, as well as files inside epub/Zip files.
  */
 class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
 
@@ -37,16 +36,17 @@ class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
 
   def resolve(path: String) = Try {
     val (epubPath, filePath) = parseEpubPath(path)
-
-    // Look up file in directly, or in Zip file if it refers to inside an ePub file.
+    // Look up file in Zip file if it refers to inside an ePub file, otherwise directly.
     epubPath match {
       case None => fromFile(filePath)
       case Some(path) => fromZipFile(path, filePath)
     }
   }
 
+  /** Read file direct from file system. */
   private def fromFile(path: String) = Files.newInputStream(resolvedPath(path))
 
+  /** Read file from inside Zip file. */
   private def fromZipFile(epubPath: String, filePath: String): InputStream = {
     val zipFile = new ZipFile(resolvedPath(epubPath).toFile)
     val entries = zipFile.entries.asScala
@@ -55,8 +55,8 @@ class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
       .getOrElse(throw new NoSuchFileException(s"No file '$filePath' in file '$epubPath'"))
   }
 
-  /** Look up path and check we can't access directories above the root. */
-  private def resolvedPath(path: String): Path = {
+  /** Look up path below root, and check we can't access directories above the root directory. */
+  private def resolvedPath(path: String) = {
     val resolved = root.resolve(path)
     val absDirPath = resolved.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS)
     if (root.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(absDirPath))

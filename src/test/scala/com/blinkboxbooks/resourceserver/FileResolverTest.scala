@@ -26,6 +26,7 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
 
   val KeyFile = "secret.key"
   val TopLevelFile = "toplevel.html"
+
   val topLevel = Files.createTempDirectory(getClass.getName)
   val rootDir = topLevel.resolve("root")
   val contentDir = rootDir.resolve("content")

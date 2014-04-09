@@ -1,12 +1,11 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io.File
+import java.io.InputStream
 import java.io.FileInputStream
 import java.nio.file._
 import javax.servlet.http.HttpServletRequest
 import javax.activation.MimetypesFileTypeMap
-import org.joda.time.format.ISODateTimeFormat
-import org.apache.commons.codec.digest.DigestUtils
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
@@ -14,13 +13,14 @@ import scala.concurrent.Future
 import org.scalatra.UriDecoder
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
-import com.typesafe.scalalogging.slf4j.Logging
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.ISODateTimeFormat
+import org.apache.commons.codec.digest.DigestUtils
+import com.typesafe.scalalogging.slf4j.Logging
 import resource._
 import MatrixParameters._
 import Utils._
-import java.io.InputStream
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -105,14 +105,15 @@ class ResourceServlet(resolver: FileResolver,
     val byteRange = Utils.range(Option(request.getHeader("Range")))
 
     val (originalExtension, targetExtension) = fileExtension(filename)
-    val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
+    val targetFileType = targetExtension
+      .getOrElse(originalExtension
+        .getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
 
     // Look for cached file if requesting a transformed image.
     val cachedImage = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
-    val inputStream = cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename)))
-    try {
+    for (inputStream <- managed(cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename))))) {
       contentType = mimeTypes.getContentType("file." + targetFileType)
       characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
       response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
@@ -132,9 +133,6 @@ class ResourceServlet(resolver: FileResolver,
       if (!cachedImage.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
         Future { cache.addImage(baseFilename) }(cacheingContext)
       }
-
-    } finally {
-      inputStream.close()
     }
   }
 

@@ -1,7 +1,12 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io.File
+import java.io.InputStream
 import java.io.OutputStream
+import java.io.IOException
+import java.nio.file.Path
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption._
 import javax.imageio.ImageIO
 import javax.imageio.stream.FileImageOutputStream
 import javax.imageio.stream.ImageOutputStream
@@ -11,14 +16,10 @@ import org.imgscalr.Scalr
 import org.imgscalr.Scalr.Method
 import org.imgscalr.Scalr.Mode
 import com.typesafe.scalalogging.slf4j.Logging
-import java.io.IOException
 import resource._
 import Utils._
 import scala.util.Try
 import scala.util.control.NonFatal
-import java.nio.file.Path
-import java.nio.file.Files
-import java.io.InputStream
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -68,13 +69,9 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
         val outputPath = cachedFilePath(path, size)
         val outputFile = root.resolve(outputPath)
 
-        if (Files.exists(outputFile)) {
-          logger.debug(s"Deleting existing file: $outputFile")
-          Files.delete(outputFile)
-        }
         Files.createDirectories(outputFile.getParent())
         try {
-          for (output <- managed(Files.newOutputStream(outputFile))) {
+          for (output <- managed(Files.newOutputStream(outputFile, CREATE, TRUNCATE_EXISTING))) {
             writeFile(resized, output)
             logger.debug("Wrote output file: " + outputFile + " with dimensions (" + resized.getWidth() + "[w], "
               + resized.getHeight() + "[h])")
@@ -88,6 +85,7 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
     }
   }
 
+  /** @return the first image with a size bigger than the minimum size, or None if no such exists. */
   override def getImage(path: String, minSize: Int): Option[InputStream] =
     for (
       suitableCachedSize <- targetSizes.find(_ >= minSize);
@@ -95,6 +93,7 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
       file <- Try(root.resolve(cachedPath)).toOption if (Files.exists(file))
     ) yield Files.newInputStream(file)
 
+  /** Check whether this cache is configured with any image sizes that are within the given size. */
   override def wouldCacheImage(size: Option[Int]) = size.isDefined && size.get <= targetSizes.max
 
   private def cachedFilePath(path: String, size: Int) = s"${size}x${size}" + File.separator + path

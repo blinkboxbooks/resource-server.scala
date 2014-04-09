@@ -126,14 +126,14 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     assert(ex eq returnedEx)
   }
 
-  private def checkIsCached(requestedWidth: Int, cachedWidth: Int) {
+  private def checkIsCached(requestedWidth: Int, cachedWidth: Int) =
     cache.getImage(filePath, requestedWidth) match {
       case Some(input) =>
         for (i <- managed(input)) { checkImage(input, "png", cachedWidth) }
       case None => fail(s"Should find a file with size greater than $requestedWidth")
     }
-  }
 
+  /** Recursively get all paths that are at or below the given one. */
   private def getAllPaths(p: Path): Stream[Path] =
     p #:: (if (Files.isDirectory(p)) listPaths(p).toStream.flatMap(getAllPaths)
     else Stream.empty)
