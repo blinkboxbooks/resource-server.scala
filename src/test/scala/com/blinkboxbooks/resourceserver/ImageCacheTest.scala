@@ -1,66 +1,60 @@
 package com.blinkboxbooks.resourceserver
 
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.nio.file.FileSystem
 import java.nio.file.Files
-import javax.imageio.ImageIO
-import java.awt.image.BufferedImage
-import javax.imageio.stream.FileImageOutputStream
+import java.nio.file.Path
+import scala.collection.JavaConversions._
+import scala.util.Success
+import org.apache.commons.io.FileUtils
 import org.junit.runner.RunWith
-import org.scalatest.FunSuite
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
-import org.apache.commons.io.FileUtils
-import org.apache.commons.vfs2.impl.DefaultFileSystemManager
-import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider
-import org.apache.commons.vfs2.FileObject
-import org.imgscalr.Scalr
-import org.apache.commons.io.IOUtils
-import org.specs2.io.fs
-import org.apache.commons.vfs2.FileSystemManager
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers._
+import com.google.jimfs.Configuration
+import com.google.jimfs.Jimfs
 import TestUtils._
-import java.io.OutputStream
+import resource._
+import scala.util.Failure
+import org.apache.commons.io.IOUtils
+import java.io.ByteArrayOutputStream
 
 @RunWith(classOf[JUnitRunner])
 class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks with MockitoSugar {
 
   val sizes = Set(500, 100, 1000)
   val filePath = "some/path/to/file/test.png"
-  val fsManager = new DefaultFileSystemManager()
 
-  var cacheDir: File = _
-  var workDir: File = _
+  val largeFile = new ByteArrayOutputStream()
+  IOUtils.copy(getClass.getResourceAsStream("/large.png"), largeFile)
+
+  var fs: FileSystem = _
+  var cacheDir: Path = _
   var cache: ImageCache = _
-
-  override def beforeAll() {
-    workDir = Files.createTempDirectory(getClass.getName).toFile
-
-    FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/large.png"), new File(workDir, "test.png"))
-    FileUtils.writeStringToFile(new File(workDir, "invalid.png"), "This is not a PNG file")
-
-    fsManager.addProvider(Array("file"), new DefaultLocalFileProvider())
-    fsManager.init()
-    fsManager.setBaseFile(workDir)
-  }
+  var resolver: FileResolver = _
 
   before {
-    cacheDir = Files.createTempDirectory(getClass.getName).toFile
-    cache = FileSystemImageCache(cacheDir, sizes)
+    // Create an in-memory file system for the cache.
+    fs = Jimfs.newFileSystem(Configuration.unix())
+    cacheDir = fs.getPath("/cache")
+    Files.createDirectories(cacheDir)
+
+    resolver = mock[FileResolver]
+    doReturn(Success(new ByteArrayInputStream(largeFile.toByteArray))).when(resolver).resolve(filePath)
+
+    cache = new FileSystemImageCache(cacheDir, sizes, resolver)
   }
 
   after {
-    FileUtils.deleteDirectory(cacheDir)
+    fs.close()
   }
-
-  override def afterAll() {
-    FileUtils.deleteDirectory(workDir)
-  }
-
-  def getImage() = fsManager.resolveFile(workDir, "test.png")
 
   test("would cache image") {
     assert(!cache.wouldCacheImage(None))
@@ -75,7 +69,7 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
   }
 
   test("add then get image at various sizes") {
-    cache.addImage(filePath, getImage())
+    addImage(filePath)
 
     for (width <- Seq(50, 99, 100)) {
       checkIsCached(width, 100)
@@ -95,8 +89,9 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
   }
 
   test("add image multiple times") {
-    cache.addImage(filePath, getImage())
-    cache.addImage(filePath, getImage())
+    addImage(filePath)
+    doReturn(Success(new ByteArrayInputStream(largeFile.toByteArray))).when(resolver).resolve(filePath)
+    addImage(filePath)
 
     // Should just work as normal.
     for (width <- Seq(50, 99, 100)) {
@@ -104,35 +99,50 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     }
   }
 
-  test("exception is thrown while writing cached file") {
-    val fs = mock[FileSystemManager]
-    val file = mockFile("Test")
-    val ex = new IOException("Test exception")
-    val outputStream = mock[OutputStream]
-    val content = file.getContent
-    doReturn(outputStream).when(content).getOutputStream()
-    doThrow(ex).when(outputStream).close()
-    doReturn(file).when(fs).resolveFile(anyString)
+  test("run out of disk space while writing cached file") {
+    // Create an in-memory file system with very little space (the size of
+    // the first file plus a bit).
+    fs = Jimfs.newFileSystem(Configuration.unix().toBuilder().setMaxSize(1000).build())
+    cacheDir = fs.getPath("/cache")
+    Files.createDirectories(cacheDir)
+    cache = new FileSystemImageCache(cacheDir, sizes, resolver)
 
-    val cache = new FileSystemImageCache(cacheDir, sizes, fs)
-    intercept[IOException] { cache.addImage(filePath, getImage()) }
-    
-    // Check that the partially written file was deleted.
-    verify(file, times(2)).delete()
+    intercept[IOException] { addImage(filePath) }
+
+    // Check that the partially written file was deleted, no new files should be left behind.
+    assert(getAllPaths(cacheDir).filter(!Files.isDirectory(_)).size === 0)
   }
 
   test("try to add invalid image file") {
-    intercept[IOException] { cache.addImage(filePath, fsManager.resolveFile(workDir, "invalid.png")) }
+    doReturn(Success(new ByteArrayInputStream("Not a PNG file".getBytes())))
+      .when(resolver).resolve(anyString)
+    intercept[IOException] { cache.addImage(filePath) }
   }
 
   test("try to add non-existant image file") {
-    intercept[IOException] { cache.addImage(filePath, fsManager.resolveFile(workDir, "doesnt-exist.png")) }
+    val ex = new IOException("test execption")
+    doReturn(Failure(ex)).when(resolver).resolve("unknown.png")
+    val returnedEx = intercept[IOException] { cache.addImage("unknown.png") }
+    assert(ex eq returnedEx)
   }
 
-  def checkIsCached(requestedWidth: Int, cachedWidth: Int) {
-    val file = cache.getImage(filePath, requestedWidth)
-    assert(file.isDefined, s"Should find a file with size greater than $requestedWidth")
-    checkImage(file.get.getContent().getInputStream(), "png", cachedWidth)
-  }
+  private def checkIsCached(requestedWidth: Int, cachedWidth: Int) =
+    cache.getImage(filePath, requestedWidth) match {
+      case Some(input) =>
+        for (i <- managed(input)) { checkImage(input, "png", cachedWidth) }
+      case None => fail(s"Should find a file with size greater than $requestedWidth")
+    }
+
+  /** Recursively get all paths that are at or below the given one. */
+  private def getAllPaths(p: Path): Stream[Path] =
+    p #:: (if (Files.isDirectory(p)) listPaths(p).toStream.flatMap(getAllPaths)
+    else Stream.empty)
+
+  private def listPaths(p: Path): Stream[Path] = Stream() ++ Files.newDirectoryStream(p).iterator()
+
+  private def addImage(path: String) =
+    for (image <- managed(new ByteArrayInputStream(largeFile.toByteArray))) {
+      cache.addImage(path)
+    }
 
 }

@@ -27,15 +27,9 @@ class ScalatraBootstrap extends LifeCycle with Logging {
       throw new ConfigException.BadPath(dataDirStr, "Data directory parameter must point to a valid directory")
     }
 
-    // Temporary directory, used for unzipping files etc.
-    val tmpDirectory = if (config.hasPath("tmp.directory")) Some(new File(config.getString("tmp.directory"))) else None
-    if (tmpDirectory.isDefined && !tmpDirectory.get.isDirectory()) {
-      throw new ConfigException.BadPath(config.getString("tmp.directory"), "tmp directory parameter must point to a valid directory")
-    }
-
     // Cache directory, where smaller versions of image files are stored.
-    val cacheDirectory = new File(config.getString("cache.directory"))
-    if (!cacheDirectory.isDirectory()) {
+    val cacheDirectory = FileSystems.getDefault().getPath(config.getString("cache.directory"))
+    if (!Files.isDirectory(cacheDirectory)) {
       throw new ConfigException.BadPath("cache.directory", "Cache directory parameter must point to a valid directory")
     }
 
@@ -51,7 +45,7 @@ class ScalatraBootstrap extends LifeCycle with Logging {
     val warnThreshold = Duration(config.getInt("logging.perf.threshold.warn"), MILLISECONDS)
     val errorThreshold = Duration(config.getInt("logging.perf.threshold.error"), MILLISECONDS)
 
-    // TODO: Make this configurable?
+    // Not making this configurable at the moment, as this should only change after careful consideration!
     val cachedFileSizes = Set(400, 900)
 
     val cacheingThreadCount =
@@ -60,9 +54,10 @@ class ScalatraBootstrap extends LifeCycle with Logging {
     val cacheingExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(cacheingThreadCount, threadFactory))
 
+    val fileResolver = new EpubEnabledFileResolver(dataDirectory)
     // Create and mount the resource servlet.
-    context.mount(ResourceServlet(FileSystem.createZipFileSystem(dataDirectory, tmpDirectory),
-      FileSystemImageCache(cacheDirectory, cachedFileSizes), cacheingExecutionContext, numThreads,
+    context.mount(ResourceServlet(fileResolver,
+      new FileSystemImageCache(cacheDirectory, cachedFileSizes, fileResolver), cacheingExecutionContext, numThreads,
       infoThreshold, warnThreshold, errorThreshold), "/*")
   }
 

@@ -28,6 +28,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   var imageCache: ImageCache = _
   var parentDir: File = _
   var rootDir: File = _
+  var resolver: FileResolver = _
 
   override def beforeAll() {
     super.beforeAll()
@@ -41,8 +42,10 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     val subdir = new File(rootDir, "sub")
     subdir.mkdir()
 
-    val cacheDir = new File(topLevel.toFile, "file-cache")
-    imageCache = FileSystemImageCache(cacheDir, Set(400, 900))
+    resolver = new EpubEnabledFileResolver(rootDir.toPath)
+
+    val cacheDir = topLevel.resolve("file-cache")
+    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900), resolver)
 
     FileUtils.write(new File(parentDir, TopLevelFile), "Should not be accessible")
     FileUtils.write(new File(rootDir, KeyFile), "Don't serve this up")
@@ -55,9 +58,8 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   before {
-    val fs = FileSystem.createZipFileSystem(rootDir.toPath(), None)
     // Mount the servlet under test.
-    addServlet(ResourceServlet(fs, imageCache, directExecutionContext, 1, 0 millis, 100 millis, 250 millis), "/*")
+    addServlet(ResourceServlet(resolver, imageCache, directExecutionContext, 1, 0 millis, 100 millis, 250 millis), "/*")
   }
 
   override def afterAll() {
@@ -87,6 +89,12 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Invalid access to absolute path") {
+    get("/params;v=0//test.epub/content/intro.html") {
+      assert(status === 400)
+    }
+  }
+
   test("Direct file access in subdirectory") {
     get("/sub/ch02.html") {
       assert(status === 200)
@@ -113,6 +121,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   test("Download image inside epub file") {
     get("/params;v=0/test.epub/images/test.jpeg") {
+      assert(status === 200)
       checkImage(response.inputStream, "jpeg", 320, 200)
       assert(header("Content-Length") === "22024")
       assert(header("Content-Type") === "image/jpeg")
