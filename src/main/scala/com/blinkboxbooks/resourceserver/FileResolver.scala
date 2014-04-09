@@ -1,23 +1,23 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io.File
-import java.nio.file.Path
-import java.nio.file.Files
-import java.nio.file.FileSystems
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
-import scala.collection.JavaConverters._
-import scala.util.Try
-import java.util.zip.ZipFile
-import com.typesafe.scalalogging.slf4j.Logging
+import java.io.FilterInputStream
+import java.nio.file.Path
+import java.nio.file.Files
+import java.nio.file.FileSystems
 import java.nio.file.LinkOption
 import java.nio.file.AccessDeniedException
 import java.nio.file.NoSuchFileException
-import java.io.FilterInputStream
+import java.nio.file.Paths
+import java.util.zip.ZipFile
+import scala.collection.JavaConverters._
+import scala.util.Try
+import com.typesafe.scalalogging.slf4j.Logging
 import org.apache.commons.io.input.ProxyInputStream
 import org.apache.commons.io.IOUtils
-import java.nio.file.Paths
 
 trait FileResolver {
 
@@ -69,13 +69,17 @@ class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
 
   /** Look up path below root, and check we can't access directories above the root directory. */
   private def resolvedPath(path: String) = {
-    if (Paths.get(path).isAbsolute) throw new IllegalArgumentException(s"Absolute path '$path' not allowed")
+    if (Paths.get(path).isAbsolute)
+      throw new AccessDeniedException(s"Absolute path '$path' not allowed")
+    if (Paths.get(path).iterator.asScala.contains(Paths.get("..")))
+      throw new AccessDeniedException(s"Relative path '$path' not allowed")
+
     val resolved = root.resolve(path)
-    
+
     val absDirPath = resolved.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS)
     if (root.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(absDirPath))
       throw new AccessDeniedException(s"Access not allowed to path '$path'")
-    
+
     resolved
   }
 }
