@@ -28,6 +28,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   var imageCache: ImageCache = _
   var parentDir: File = _
   var rootDir: File = _
+  var resolver: FileResolver = _
 
   override def beforeAll() {
     super.beforeAll()
@@ -41,8 +42,10 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     val subdir = new File(rootDir, "sub")
     subdir.mkdir()
 
+    resolver = new EpubEnabledFileResolver(rootDir.toPath)
+
     val cacheDir = topLevel.resolve("file-cache")
-    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900))
+    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900), resolver)
 
     FileUtils.write(new File(parentDir, TopLevelFile), "Should not be accessible")
     FileUtils.write(new File(rootDir, KeyFile), "Don't serve this up")
@@ -55,8 +58,6 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   before {
-    // TODO: Really should pass in Path here:
-    val resolver = new EpubEnabledFileResolver(rootDir.getAbsoluteFile().toString)
     // Mount the servlet under test.
     addServlet(ResourceServlet(resolver, imageCache, directExecutionContext, 1, 0 millis, 100 millis, 250 millis), "/*")
   }

@@ -20,7 +20,7 @@ import org.joda.time.format.DateTimeFormat
 import resource._
 import MatrixParameters._
 import Utils._
-import FileSystem._
+import java.io.InputStream
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -104,32 +104,37 @@ class ResourceServlet(resolver: FileResolver,
 
     val byteRange = Utils.range(Option(request.getHeader("Range")))
 
-    val (originalExtension, targetExtension) = fileExtension(filename) 
+    val (originalExtension, targetExtension) = fileExtension(filename)
     val targetFileType = targetExtension.getOrElse(originalExtension.getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
 
-    // Look for cached file if a smaller image has been requested.
-    val cachedFile = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
-    val path = cachedFile.getOrElse(getFile(resolver.resolve(baseFilename)))
+    // Look for cached file if requesting a transformed image.
+    val cachedImage = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
+    val inputStream = cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename)))
+    try {
+      contentType = mimeTypes.getContentType("file." + targetFileType)
+      characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
+      response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
+      response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
-    if (!cachedFile.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
-      Future { cache.addImage(baseFilename, path) }(cacheingContext)
-    }
-
-    contentType = mimeTypes.getContentType("file." + targetFileType)
-    characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-    response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
-    response.headers += ("ETag" -> stringHash(request.getRequestURI))
-
-    // Get input and output and skip and truncate results if requested.
-    for (inputStream <- managed(Files.newInputStream(path))) {
+      // Truncate results if requested.
       val boundedInput = boundedInputStream(inputStream, byteRange)
+
+      // Write resulting data.
       if (imageSettings.hasSettings || targetExtension.isDefined) {
         time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
       } else {
         time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
       }
+
+      // Add background task to cache image.
+      if (!cachedImage.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
+        Future { cache.addImage(baseFilename) }(cacheingContext)
+      }
+
+    } finally {
+      inputStream.close()
     }
   }
 
@@ -147,7 +152,7 @@ class ResourceServlet(resolver: FileResolver,
 
   private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
 
-  private def getFile(file: Try[Path]) = file match {
+  private def checkedInput(input: Try[InputStream]) = input match {
     case Success(path) => path
     case Failure(e) =>
       logger.info("Request for rejected as the file doesn't exist: " + e.getMessage)

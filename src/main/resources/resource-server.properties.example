@@ -5,10 +5,6 @@ resource.server.path=/
 # Root directory that files are served from.
 data_dir=/root/of/file/directory
 
-# Temporary directory used for unzipping epubs.
-# If not set, will default to the system tmp directory.
-# tmp.directory=/tmp
-
 # Logging performance thresholds, in milliseconds.
 # This controls at which level performance logs are logged.
 logging.perf.threshold.info=100

@@ -13,13 +13,17 @@ import java.io.IOException
 import java.io.FileNotFoundException
 import java.nio.file.AccessDeniedException
 import java.nio.file.NoSuchFileException
+import org.apache.commons.io.IOUtils
+import java.io.InputStream
+import scala.util.Try
+import java.util.Arrays
+import java.nio.file.Paths
 
 @RunWith(classOf[JUnitRunner])
 class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
 
   import EpubEnabledFileResolver._
 
-  // TODO: Factor out into reusable trait.
   val KeyFile = "secret.key"
   val TopLevelFile = "toplevel.html"
   val topLevel = Files.createTempDirectory(getClass.getName)
@@ -27,7 +31,7 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
   val contentDir = rootDir.resolve("content")
   val subDir = contentDir.resolve("sub")
   Files.createDirectories(subDir)
-  val resolver = new EpubEnabledFileResolver(rootDir.toAbsolutePath().toString())
+  val resolver = new EpubEnabledFileResolver(rootDir)
 
   override def beforeAll() {
     super.beforeAll()
@@ -50,62 +54,59 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
 
   test("direct file lookup") {
     val expectedContent = "<p>It was a dark and stormy night...</p>"
-    val path = resolver.resolve("ch01.html")
-    assert(FileUtils.readFileToString(path.get.toFile) === expectedContent)
+    val input = resolver.resolve("ch01.html")
+    assert(content(input) === expectedContent)
   }
 
   test("direct file lookup in subdirectory") {
     val expectedContent = "<p>and the wind was blowing a gale.</p>"
-    val path = resolver.resolve("content/sub/ch02.html")
-    assert(FileUtils.readFileToString(path.get.toFile) === expectedContent)
+    val input = resolver.resolve("content/sub/ch02.html")
+    assert(content(input) === expectedContent)
   }
 
   test("direct lookup of missing file") {
     val filename = "unknown.file"
-    val path = resolver.resolve(filename)
-    val ex = intercept[FileNotFoundException] { path.get }
+    val input = resolver.resolve(filename)
+    val ex = intercept[NoSuchFileException] { input.get }
     assert(ex.getMessage.contains(filename))
   }
 
   test("file lookup above root directory") {
     val filename = "../" + TopLevelFile
-    val path = resolver.resolve(filename)
-    val ex = intercept[AccessDeniedException] { path.get }
+    val input = resolver.resolve(filename)
+    val ex = intercept[AccessDeniedException] { input.get }
     assert(ex.getMessage.contains(filename))
   }
 
   test("get file inside epub") {
     val expectedContent = "<p>Welcome dear reader!</p>\n"
-    val path = resolver.resolve("test.epub/content/intro.html")
-    assert(content(path.get) === expectedContent)
+    val input = resolver.resolve("test.epub/content/intro.html")
+    assert(content(input) === expectedContent)
   }
 
   test("get file inside epub in subdirectory") {
     val expectedContent = "<p>Welcome dear reader!</p>\n"
-    val path = resolver.resolve("content/sub/test2.epub/content/intro.html")
-    assert(content(path.get) === expectedContent)
+    val input = resolver.resolve("content/sub/test2.epub/content/intro.html")
+    assert(content(input) === expectedContent)
   }
 
   test("try to get missing file inside epub") {
     val path = "sub/test2.epub/content/unknown"
     val ex = intercept[NoSuchFileException] { resolver.resolve(path).get }
-    assert(ex.getMessage.contains("test2.epub"))
   }
 
   test("try to get file inside missing epub") {
     val path = "sub/unknown.epub/content/intro.html"
-    val ex = intercept[NoSuchFileException] { resolver.resolve(path).get }
-    assert(ex.getMessage.contains("unknown.epub"))
+    intercept[NoSuchFileException] { resolver.resolve(path).get }
   }
 
   test("try to get file from invalid epub") {
     val path = "invalid.epub/foo"
-    val ex = intercept[FileNotFoundException] { resolver.resolve(path).get }
-    assert(ex.getMessage.contains("invalid.epub"))
+    intercept[FileNotFoundException] { resolver.resolve(path).get }
   }
 
   test("badly configured resolver") {
-    intercept[IOException] { new EpubEnabledFileResolver("doesn't exist") }
+    intercept[IOException] { new EpubEnabledFileResolver(Paths.get("does", "not", "exist")) }
   }
 
   test("parse valid paths with no epub parent") {
@@ -124,6 +125,6 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
       })
   }
 
-  def content(path: Path) = new String(Files.readAllBytes(path), "UTF-8")
+  def content(input: Try[InputStream]) = IOUtils.toString(input.get, "UTF-8")
 
 }

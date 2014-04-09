@@ -9,7 +9,6 @@ import org.mockito.Mockito._
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.ArgumentCaptor
-import TestUtils._
 import java.nio.file.FileSystems
 import java.nio.file.FileSystem
 import java.nio.file.Path
@@ -18,6 +17,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.ByteArrayInputStream
 import scala.util.Success
+import TestUtils._
 
 /**
  * Unit tests for resource servlet.
@@ -34,7 +34,6 @@ class ResourceServletUnitTest extends ScalatraSuite
   var imageProcessor: ImageProcessor = _
   var fileResolver: FileResolver = _
   var imageCache: ImageCache = _
-  var path: Path = _
   var inputStream: InputStream = _
 
   before {
@@ -43,14 +42,8 @@ class ResourceServletUnitTest extends ScalatraSuite
 
     // Mock file system bits so we can check that streams are closed correctly etc.
     fileResolver = mock[FileResolver]
-    path = mock[Path]
-    doReturn(Success(path)).when(fileResolver).resolve(anyString)
-    val fileSystem = mock[FileSystem]
-    doReturn(fileSystem).when(path).getFileSystem()
-    val provider = mock[FileSystemProvider]
-    doReturn(provider).when(fileSystem).provider()
     inputStream = spy(new ByteArrayInputStream("Test".getBytes("UTF-8")))
-    doReturn(inputStream).when(provider).newInputStream(any[Path])
+    doReturn(Success(inputStream)).when(fileResolver).resolve(anyString)
 
     imageCache = mock[ImageCache]
     doReturn(None).when(imageCache).getImage(anyString, anyInt)
@@ -64,7 +57,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/test.jpeg") {
       assert(status === 200)
       verify(fileResolver).resolve("test.jpeg")
-      verify(inputStream).close()
+      verify(inputStream, atLeastOnce).close()
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
   }
@@ -82,7 +75,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/params;v=0/test.epub/test/content/intro.html") {
       assert(status === 200)
       verify(fileResolver).resolve("test.epub/test/content/intro.html")
-      verify(inputStream).close()
+      verify(inputStream, atLeastOnce).close()
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
   }
@@ -96,6 +89,8 @@ class ResourceServletUnitTest extends ScalatraSuite
   }
 
   test("Download image with all available image settings, image not in cache") {
+    doReturn(None).when(imageCache).getImage(anyString, anyInt)
+
     get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;img:g=n;v=0/test.epub/test/content/images/test.jpeg") {
       verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
       val imageSettings = new ImageSettings(
@@ -104,11 +99,7 @@ class ResourceServletUnitTest extends ScalatraSuite
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
       val sizeArg = ArgumentCaptor.forClass(classOf[Option[Int]])
       verify(imageCache).wouldCacheImage(sizeArg.capture())
-
-      val pathArg = ArgumentCaptor.forClass(classOf[Path])
-      verify(imageCache).addImage(Matchers.eq("test.epub/test/content/images/test.jpeg"), pathArg.capture())
-      assert(pathArg.getValue() eq path,
-        "Should pass on the same path to the cache that it got from the file system, got: " + pathArg.getValue() + " vs. " + path)
+      verify(imageCache).addImage("test.epub/test/content/images/test.jpeg")
 
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
@@ -116,8 +107,8 @@ class ResourceServletUnitTest extends ScalatraSuite
 
   test("Download image with all available image settings, image in cache") {
     // Set up cache to returned cached image.
-    val cachedFile = mockFile("Cached file")
-    doReturn(Some(cachedFile)).when(imageCache).getImage(anyString, anyInt)
+    val cachedInput = spy(new ByteArrayInputStream("Test".getBytes("UTF-8")))
+    doReturn(Some(cachedInput)).when(imageCache).getImage(anyString, anyInt)
 
     get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;img:g=n;v=0/test.epub/test/content/images/test.jpeg") {
       assert(status === 200)
@@ -208,18 +199,6 @@ class ResourceServletUnitTest extends ScalatraSuite
       assert(body.toLowerCase.matches(".*quality.*"))
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
-  }
-
-  // TODO: MOVE SOMEWHERE COMMON?
-  def mockFile(content: String): Path = {
-    val path = mock[Path]
-    val fileSystem = mock[FileSystem]
-    doReturn(fileSystem).when(path).getFileSystem()
-    val provider = mock[FileSystemProvider]
-    doReturn(provider).when(fileSystem).provider()
-    val input = new ByteArrayInputStream("Test".getBytes("UTF-8"))
-    doReturn(input).when(provider).newInputStream(any[Path])
-    path
   }
 
 }

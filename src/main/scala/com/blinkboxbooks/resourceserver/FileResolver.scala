@@ -1,28 +1,27 @@
 package com.blinkboxbooks.resourceserver
 
-import scala.util.Try
 import java.io.File
-import com.typesafe.scalalogging.slf4j.Logging
 import java.nio.file.Path
-import java.nio.file.spi.FileSystemProvider
+import java.nio.file.Files
 import java.nio.file.FileSystems
 import java.io.FileNotFoundException
-import java.nio.file.AccessDeniedException
-import java.nio.file.LinkOption
-import java.nio.file.FileSystem
-import scala.collection.JavaConverters._
-import java.net.URI
-import java.nio.file.Paths
 import java.io.IOException
-import java.nio.file.Files
+import java.io.InputStream
+import scala.collection.JavaConverters._
+import scala.util.Try
+import java.util.zip.ZipFile
+import com.typesafe.scalalogging.slf4j.Logging
+import java.nio.file.LinkOption
+import java.nio.file.AccessDeniedException
+import java.nio.file.NoSuchFileException
 
 trait FileResolver {
 
   /**
-   * Look up requested path. Returns a path that can be used to read file data,
+   * Look up requested path. Returns an input stream for the file data,
    * no matter what the underlying storage is.
    */
-  def resolve(path: String): Try[Path]
+  def resolve(path: String): Try[InputStream]
 
 }
 
@@ -30,41 +29,39 @@ trait FileResolver {
  * Class that knows how to resolve regular files, as well as files inside epub files,
  * that is: files with an .epub extension, which are treated as Zip files.
  */
-class EpubEnabledFileResolver(root: String) extends FileResolver with Logging {
+class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
 
   import EpubEnabledFileResolver._
 
-  val fs = FileSystems.getDefault
-  val rootPath = fs.getPath(root)
-  if (!rootPath.toFile.isDirectory()) throw new IOException(s"Path must be a valid directory: $root")
+  if (!Files.isDirectory(root)) throw new IOException(s"Path must be a valid directory: $root")
 
-  def resolve(path: String): Try[Path] = Try {
+  def resolve(path: String) = Try {
     val (epubPath, filePath) = parseEpubPath(path)
 
-    // Look up file in default file system, or Zip file system if it refers to inside an ePub file.
-    val (resolvedFs, baseDirectory) = epubPath match {
-      case Some(path) => zipFile(rootPath.toAbsolutePath().toString, path)
-      case None => (fs, root)
+    // Look up file in directly, or in Zip file if it refers to inside an ePub file.
+    epubPath match {
+      case None => fromFile(filePath)
+      case Some(path) => fromZipFile(path, filePath)
     }
-
-    val resolvedBase = resolvedFs.getPath(baseDirectory)
-    val resolvedPath = resolvedBase.resolve(filePath)
-
-    // Don't allow access to files above the root directory (using ".." in path).
-    val absDirPath = resolvedPath.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS)
-    if (rootPath.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(absDirPath))
-      throw new AccessDeniedException(s"Access not allowed to path '$path'")
-
-    if (!Files.exists(resolvedPath)) throw new FileNotFoundException(s"File not found at path '$path'")
-
-    resolvedPath
   }
 
-  private def zipFile(rootPath: String, epubPath: String): (FileSystem, String) = {
-    val env = Map("create" -> "true").asJava
-    val uri = URI.create(s"jar:file:$rootPath/$epubPath")
-    //    val path = Paths.get(rootPath).resolve(epubPath)
-    (FileSystems.newFileSystem(uri, env), "/")
+  private def fromFile(path: String) = Files.newInputStream(resolvedPath(path))
+
+  private def fromZipFile(epubPath: String, filePath: String): InputStream = {
+    val zipFile = new ZipFile(resolvedPath(epubPath).toFile)
+    val entries = zipFile.entries.asScala
+    val entry = entries.find(e => e.getName == filePath)
+    entry.map(e => zipFile.getInputStream(e))
+      .getOrElse(throw new NoSuchFileException(s"No file '$filePath' in file '$epubPath'"))
+  }
+
+  /** Look up path and check we can't access directories above the root. */
+  private def resolvedPath(path: String): Path = {
+    val resolved = root.resolve(path)
+    val absDirPath = resolved.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS)
+    if (root.getParent.toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(absDirPath))
+      throw new AccessDeniedException(s"Access not allowed to path '$path'")
+    resolved
   }
 }
 

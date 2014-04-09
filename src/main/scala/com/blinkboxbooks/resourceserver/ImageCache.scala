@@ -18,6 +18,7 @@ import scala.util.Try
 import scala.util.control.NonFatal
 import java.nio.file.Path
 import java.nio.file.Files
+import java.io.InputStream
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -31,14 +32,14 @@ trait ImageCache {
    *
    * @throws IOException if unable to store image files.
    */
-  def addImage(path: String, original: Path)
+  def addImage(path: String)
 
   /**
    * Look for a file with a cached image where the bounding size of the cached image
    * is at least the given size.
    * @returns the smallest image that satisfies this constraint.
    */
-  def getImage(path: String, minSize: Int): Option[Path]
+  def getImage(path: String, minSize: Int): Option[InputStream]
 
   /**
    * @returns true if the given file size is smaller than the maximum size
@@ -47,15 +48,16 @@ trait ImageCache {
   def wouldCacheImage(size: Option[Int]): Boolean
 }
 
-class FileSystemImageCache(root: Path, sizes: Set[Int]) extends ImageCache with Logging {
+class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) extends ImageCache with Logging {
 
   // Ordered list of the sizes at which images are cached.
   val targetSizes = sizes.toList.sorted
 
-  override def addImage(path: String, original: Path) {
+  override def addImage(path: String) {
     logger.debug(s"Caching image at $path")
+    val original = resolver.resolve(path).get
     for (
-      input <- managed(Files.newInputStream(original));
+      input <- managed(original);
       image <- managed(ImageIO.read(input))
     ) {
       if (image == null) throw new IOException(s"Unable to decode image at $path")
@@ -86,12 +88,12 @@ class FileSystemImageCache(root: Path, sizes: Set[Int]) extends ImageCache with 
     }
   }
 
-  override def getImage(path: String, minSize: Int): Option[Path] =
+  override def getImage(path: String, minSize: Int): Option[InputStream] =
     for (
       suitableCachedSize <- targetSizes.find(_ >= minSize);
       cachedPath <- Some(cachedFilePath(path, suitableCachedSize));
       file <- Try(root.resolve(cachedPath)).toOption if (Files.exists(file))
-    ) yield file
+    ) yield Files.newInputStream(file)
 
   override def wouldCacheImage(size: Option[Int]) = size.isDefined && size.get <= targetSizes.max
 
