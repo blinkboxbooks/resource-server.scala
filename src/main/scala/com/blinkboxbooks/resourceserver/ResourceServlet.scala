@@ -125,9 +125,6 @@ class ResourceServlet(fileSystemManager: FileSystemManager,
       response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
       // Get input and output and skip and truncate results if requested.
-      val inputStream = file.getContent().getInputStream()
-      val boundedInput = boundedInputStream(inputStream, byteRange)
-
       for (
         inputStream <- managed(file.getContent().getInputStream());
         boundedInput <- managed(boundedInputStream(inputStream, byteRange))

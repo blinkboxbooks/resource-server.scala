@@ -9,9 +9,10 @@ import bootstrap._
 import java.io.File
 import scala.util.Random
 
-class ImagesInEpubsSimulation extends Simulation {
+class ImageRequestsSimulation extends Simulation {
 
-  val paths = findPaths("/Users/jans/data/resources/test-epubs", Set("epub")).random
+  val paths = findPaths("/Users/jans/data/resources", Set("png", "jpeg", "jpeg")).random
+  //  val paths = Array(Map("path" -> "9780/709/082/804/c99e3a6ffff35d9c5924a81451b82b0b.png")).random
   
   val outputSizes = Array(99, 150, 153, 167, 330, 362, 366, 731)
   val sizes = outputSizes.zip(Stream.continually("size")).map{ case (k, v) => Map(v -> k.toString) }.random
@@ -23,12 +24,12 @@ class ImagesInEpubsSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
 
   val scn = scenario("get pseudo-random sequence of images")
-    .repeat(5000) {
+    .repeat(500000) {
       feed(paths)
         .feed(sizes)
         .exec(
           http("request_1")
-            .get("/params;v=0;img:w=${size};img:m=scale/${path}/images/test.png.jpeg")
+            .get("/params;v=0;img:w=${size};img:m=scale/${path}.jpeg")
             .check(status.is(200)))
     }
 
