@@ -59,6 +59,13 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
     assert(content(input) === expectedContent)
   }
 
+  test("direct file lookup of file with absolute path should not be allowed") {
+    val path = "/ch01.html"
+    val ex = intercept[IllegalArgumentException] { resolver.resolve(path).get }
+    assert(ex.getMessage.toLowerCase.contains("absolute"))
+    assert(ex.getMessage.toLowerCase.contains(path))
+  }
+
   test("direct file lookup in subdirectory") {
     val expectedContent = "<p>and the wind was blowing a gale.</p>"
     val input = resolver.resolve("content/sub/ch02.html")
@@ -83,6 +90,12 @@ class EpubEnabledFileResolverTest extends FunSuite with BeforeAndAfterAll {
     val expectedContent = "<p>Welcome dear reader!</p>\n"
     val input = resolver.resolve("test.epub/content/intro.html")
     assert(content(input) === expectedContent)
+  }
+
+  test("acessing epub file with absolute path should not be allowed") {
+    val ex = intercept[IllegalArgumentException] { resolver.resolve("/test.epub/content/intro.html").get }
+    assert(ex.getMessage.toLowerCase.contains("absolute"))
+    assert(ex.getMessage.toLowerCase.contains("/test.epub"))
   }
 
   test("get file inside epub in subdirectory") {

@@ -152,6 +152,9 @@ class ResourceServlet(resolver: FileResolver,
 
   private def checkedInput(input: Try[InputStream]) = input match {
     case Success(path) => path
+    case Failure(e: IllegalArgumentException) =>
+      logger.info("Request for invalid path rejected: " + e.getMessage)
+      halt(400, "The requested resource path is invalid")
     case Failure(e) =>
       logger.info("Request for rejected as the file doesn't exist: " + e.getMessage)
       halt(404, "The requested resource does not exist here")

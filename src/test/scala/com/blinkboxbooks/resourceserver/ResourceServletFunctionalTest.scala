@@ -89,6 +89,12 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Invalid access to absolute path") {
+    get("/params;v=0//test.epub/content/intro.html") {
+      assert(status === 400)
+    }
+  }
+
   test("Direct file access in subdirectory") {
     get("/sub/ch02.html") {
       assert(status === 200)
