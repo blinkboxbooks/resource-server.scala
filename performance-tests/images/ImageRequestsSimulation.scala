@@ -9,13 +9,14 @@ import bootstrap._
 import java.io.File
 import scala.util.Random
 
-class ImagesInEpubsSimulation extends Simulation {
+class ImageRequestsSimulation extends Simulation {
 
-  val paths = findPaths("/Users/jans/data/resources/test-epubs", Set("epub")).random
-  
+  val root = "/Users/jans/data/resources/"
+  val paths = findPaths(root, Set("png", "jpeg", "jpeg")).random
+
   val outputSizes = Array(99, 150, 153, 167, 330, 362, 366, 731)
-  val sizes = outputSizes.zip(Stream.continually("size")).map{ case (k, v) => Map(v -> k.toString) }.random
-  
+  val sizes = outputSizes.zip(Stream.continually("size")).map { case (k, v) => Map(v -> k.toString) }.random
+
   val httpConf = httpConfig
     .baseURL("http://localhost:8080")
     .acceptCharsetHeader("utf-8")
@@ -28,7 +29,7 @@ class ImagesInEpubsSimulation extends Simulation {
         .feed(sizes)
         .exec(
           http("request_1")
-            .get("/params;v=0;img:w=${size};img:m=scale/${path}/images/test.png.jpeg")
+            .get("/params;v=0;img:w=${size};img:m=scale/${path}.jpeg")
             .check(status.is(200)))
     }
 
@@ -39,7 +40,7 @@ class ImagesInEpubsSimulation extends Simulation {
   def findPaths(root: String, extensions: Set[String]): Array[Map[String, String]] =
     findFiles(new File(root))
       .filter(matchesExtension(_, extensions))
-      .map(f => Map("path" -> f.getPath))
+      .map(f => Map("path" -> f.getPath.drop(root.length)))
       .toArray
 
   def findFiles(f: File): Stream[File] =
