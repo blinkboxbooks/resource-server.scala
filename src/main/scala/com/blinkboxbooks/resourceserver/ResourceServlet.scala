@@ -92,6 +92,7 @@ class ResourceServlet(resolver: FileResolver,
   error {
     case e =>
       logger.error("Unexpected error for request: " + request.getRequestURI, e)
+      response.reset()
       halt(500, "Unexpected error: " + e.getMessage)
   }
 
