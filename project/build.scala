@@ -2,7 +2,6 @@ import sbt._
 import Keys._
 import org.scalatra.sbt._
 import org.scalatra.sbt.PluginKeys._
-import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks.platform.services"
@@ -32,7 +31,6 @@ object ResourceServerBuild extends Build {
       publishArtifact in (Compile, packageDoc) := false, // Don’t publish bits we don't care about.
       publishArtifact in (Compile, packageSrc) := false,
       packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "."),
-      EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource,
       libraryDependencies ++= Seq(
         "org.scalatra" %% "scalatra" % ScalatraVersion,
         "org.scalatra" %% "scalatra-specs2" % ScalatraVersion % "test",
