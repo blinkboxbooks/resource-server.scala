@@ -7,7 +7,7 @@ import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks.platform.services"
   val Name = "resource-server"
-  val Version = "0.1.4"
+  val Version = scala.io.Source.fromFile("VERSION").mkString.trim
   val ScalaVersion = "2.10.3"
   val ScalatraVersion = "2.2.2"
 
