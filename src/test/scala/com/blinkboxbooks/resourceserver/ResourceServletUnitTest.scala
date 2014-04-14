@@ -18,6 +18,9 @@ import java.io.OutputStream
 import java.io.ByteArrayInputStream
 import scala.util.Success
 import TestUtils._
+import java.util.concurrent.Executor
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * Unit tests for resource servlet.
@@ -136,6 +139,28 @@ class ResourceServletUnitTest extends ScalatraSuite
       verify(imageCache).wouldCacheImage(Some(160))
       // Should not have added the image to the cache despite it not being there, due to the requested size.
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
+    }
+  }
+
+  test("Get uncached image when when caching queue is full") {
+    // Create an executor that will refuse to accept the second job it's given.
+    val executor = mock[Executor]
+    val exception = new RejectedExecutionException("Test exception")
+    doNothing()
+      .doThrow(exception)
+      .when(executor).execute(any(classOf[Runnable]))
+    val limitedExecutionContext = ExecutionContext.fromExecutor(executor)
+    addServlet(new ResourceServlet(fileResolver, imageProcessor, imageCache, limitedExecutionContext), "/*")
+
+    // Make two requests and check that both succeed, even though the image in the second request couldn't be cached.
+    get("/params;img:w=160;v=0/test.epub/test/content/images/test.jpeg") {
+      assert(status === 200)
+      verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
+    }
+    get("/params;img:w=160;v=0/test.epub/test/content/images/test.png") {
+      assert(status === 200)
+      verify(fileResolver).resolve("test.epub/test/content/images/test.png")
+      verify(inputStream, atLeastOnce).close()
     }
   }
 

@@ -16,6 +16,13 @@ logging.perf.threshold.error=1000
 #threads.count=8
 
 # Cache settings.
+
+# Directory used for pre-computed intermediate image sizes.
 cache.directory=/tmp
+
+# The maximum number of images that are queued up for caching/pre-computing of smaller sizes. 
+cache.queue.limit=250000
+
+# Number of background threads used to pre-compute smaller versions of images.
 # If not set, the following will default to the number of CPUs.
 #cache.threads.count=2

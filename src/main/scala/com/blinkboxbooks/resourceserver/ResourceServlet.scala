@@ -21,6 +21,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import resource._
 import MatrixParameters._
 import Utils._
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -132,7 +133,7 @@ class ResourceServlet(resolver: FileResolver,
 
       // Add background task to cache image.
       if (!cachedImage.isDefined && imageSettings.hasSettings && cache.wouldCacheImage(imageSettings.maximumDimension)) {
-        Future { cache.addImage(baseFilename) }(cacheingContext)
+        enqueueImage(baseFilename)
       }
     }
   }
@@ -160,6 +161,12 @@ class ResourceServlet(resolver: FileResolver,
       logger.info("Request for rejected as the file doesn't exist: " + e.getMessage)
       halt(404, "The requested resource does not exist here")
   }
+
+  private def enqueueImage(filename: String) =
+    Try(Future { cache.addImage(filename) }(cacheingContext)) match {
+      case Failure(e: RejectedExecutionException) => logger.warn("Failed to enqueue image for caching: " + e.getMessage)
+      case _ =>
+    }
 
 }
 
