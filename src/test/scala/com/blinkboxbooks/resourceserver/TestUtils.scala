@@ -16,15 +16,4 @@ object TestUtils extends MockitoSugar {
     override def execute(task: Runnable) = task.run()
   })
 
-//  def mockFile(text: String) = {
-//    val file = mock[FileObject]
-//    val content = mock[FileContent]
-//    val testInputStream = new ByteArrayInputStream(text.getBytes)
-//    doReturn(true).when(file).exists()
-//    doReturn(FileType.FILE).when(file).getType()
-//    doReturn(content).when(file).getContent()
-//    doReturn(testInputStream).when(content).getInputStream()
-//    file
-//  }
-
 }

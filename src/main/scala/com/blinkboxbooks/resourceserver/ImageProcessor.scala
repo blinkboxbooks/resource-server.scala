@@ -91,7 +91,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   override def transform(outputFileType: String, input: InputStream, output: OutputStream, settings: ImageSettings) {
 
     // Read the original image.
-    for (originalImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
+    for (originalImage <- managed(time("reading  image", Debug) { ImageIO.read(input) })) {
 
       if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
