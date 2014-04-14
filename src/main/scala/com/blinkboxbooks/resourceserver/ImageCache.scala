@@ -7,6 +7,7 @@ import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption._
+import java.nio.file.StandardCopyOption._
 import javax.imageio.ImageIO
 import javax.imageio.stream.FileImageOutputStream
 import javax.imageio.stream.ImageOutputStream
@@ -20,6 +21,7 @@ import resource._
 import Utils._
 import scala.util.Try
 import scala.util.control.NonFatal
+import java.nio.file.CopyOption
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -51,6 +53,8 @@ trait ImageCache {
 
 class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) extends ImageCache with Logging {
 
+  val TEMP_EXTENSION = ".work"
+
   // Ordered list of the sizes at which images are cached.
   val targetSizes = sizes.toList.sorted
 
@@ -67,18 +71,22 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
         resized <- managed(Scalr.resize(image, Method.BALANCED, Mode.AUTOMATIC, size))
       ) {
         val outputPath = cachedFilePath(path, size)
-        val outputFile = root.resolve(outputPath)
+        val tmpOutputFile = root.resolve(outputPath + TEMP_EXTENSION)
 
-        Files.createDirectories(outputFile.getParent())
+        Files.createDirectories(tmpOutputFile.getParent())
         try {
-          for (output <- managed(Files.newOutputStream(outputFile, CREATE, TRUNCATE_EXISTING))) {
-            writeFile(resized, output)
+          for (tmpOutput <- managed(Files.newOutputStream(tmpOutputFile, CREATE, TRUNCATE_EXISTING))) {
+            // Write file to temporary file, then do an atomic update when ready.
+            // This ensures that threads looking for cached files don't get a partially written file.
+            writeFile(resized, tmpOutput)
+            val outputFile = root.resolve(outputPath)
+            Files.move(tmpOutputFile, outputFile, ATOMIC_MOVE, REPLACE_EXISTING)
             logger.debug("Wrote output file: " + outputFile + " with dimensions (" + resized.getWidth() + "[w], "
               + resized.getHeight() + "[h])")
           }
         } catch {
           case NonFatal(e) =>
-            if (Files.exists(outputFile)) Files.delete(outputFile)
+            if (Files.exists(tmpOutputFile)) Files.delete(tmpOutputFile)
             throw e
         }
       }
