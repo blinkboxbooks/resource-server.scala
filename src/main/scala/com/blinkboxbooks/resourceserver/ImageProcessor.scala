@@ -65,12 +65,12 @@ trait ImageProcessor {
   /**
    * Resize a given image.
    *
+   *  @param filetype           A string such as "jpg" or "png" that describes the type of file format to write the resize image to.
+   *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param input              An input stream with the binary data of the image. Will not be closed by this method.
    *  @param output             An output stream that the converted image will be written to. Will not be closed by this method.
-   *  @param outputFiletype     A string such as "jpg" or "png" that describes the type of file format to write the resize image to.
-   *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param resizeSettings     Settings for the converted image.
-   *  @param listener           An optional callback that can be used for getting details about the produced image, before this image
+   *  @param imageCallback      An optional callback that can be used for getting details about the produced image, before this image
    *                            is written to the output.
    *
    *  @throws Exception if the given filetype is unknown.
@@ -128,7 +128,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         imageCallback.foreach { fn =>
           val effectiveSettings = new ImageSettings(width = Some(image.getWidth), height = Some(image.getHeight),
             mode = settings.mode.orElse(Some(Scale)), quality = settings.quality.orElse(Some(DefaultQuality)))
-          fn.apply(effectiveSettings)
+          fn(effectiveSettings)
         }
 
         // Convert the resulting image to the desired format.
