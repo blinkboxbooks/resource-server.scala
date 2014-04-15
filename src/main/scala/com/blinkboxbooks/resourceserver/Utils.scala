@@ -35,6 +35,27 @@ object Utils {
     }
   }
 
+  def canonicalUri(baseFilename: String, imageSettings: ImageSettings) = {
+    var params = Map("v" -> "0")
+    imageSettings.height.foreach(h => params += ("img:h" -> h.toString))
+    imageSettings.width.foreach(w => params += ("img:w" -> w.toString))
+    imageSettings.quality.foreach(q => params += ("img:q" -> (q * 100).toInt.toString))
+    imageSettings.mode match {
+      case Some(Crop) =>
+        params += ("img:m" -> "crop")
+        imageSettings.gravity.foreach(g => params += ("img:g" -> g.toString))
+      case Some(Stretch) => params += ("img:m" -> "stretch")
+      case Some(Scale) => params += ("img:m" -> "scale")
+      case None =>
+    }
+
+    val sortedParams = params.toList.sortBy(_._1)
+    "/params;" + paramsToString(sortedParams) + "/" + baseFilename
+  }
+
+  def paramsToString(params: List[(String, String)]): String =
+    params.map { case (key, value) => key.toString + "=" + value.toString }.mkString(";")
+
   /** Value class for specifying optional limits. */
   case class Range(offset: Option[Long], limit: Option[Long])
   object Range {

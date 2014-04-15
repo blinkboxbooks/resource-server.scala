@@ -69,7 +69,8 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/params;v=0/test/content/image.gif.png") {
       assert(status === 200)
       verify(fileResolver).resolve("test/content/image.gif")
-      verify(imageProcessor).transform(Matchers.eq("png"), any[InputStream], any[OutputStream], any[ImageSettings])
+      verify(imageProcessor).transform(Matchers.eq("png"), any[InputStream], any[OutputStream],
+        any[ImageSettings], any[Option[ImageSettings => Unit]])
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
   }
@@ -98,7 +99,8 @@ class ResourceServletUnitTest extends ScalatraSuite
       verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
       val imageSettings = new ImageSettings(
         width = Some(160), height = Some(120), quality = Some(0.42f), mode = Some(Crop), gravity = Some(Gravity.North))
-      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream], Matchers.eq(imageSettings))
+      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
+        Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
       val sizeArg = ArgumentCaptor.forClass(classOf[Option[Int]])
       verify(imageCache).wouldCacheImage(sizeArg.capture())
@@ -121,7 +123,8 @@ class ResourceServletUnitTest extends ScalatraSuite
       // Should not have gone to the file system manager here, as the file was cached.
       // Shouldn't have added anything new to the image cache either.
       // But should still resize the image.
-      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream], Matchers.eq(imageSettings))
+      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
+        Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
     }
   }
@@ -134,7 +137,8 @@ class ResourceServletUnitTest extends ScalatraSuite
       // Should get image from file, as it's not in cache.
       verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
       val imageSettings = new ImageSettings(width = Some(160), gravity = None)
-      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream], Matchers.eq(imageSettings))
+      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
+        Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
       verify(imageCache).wouldCacheImage(Some(160))
       // Should not have added the image to the cache despite it not being there, due to the requested size.

@@ -118,7 +118,6 @@ class ResourceServlet(resolver: FileResolver,
     for (inputStream <- managed(cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename))))) {
       contentType = mimeTypes.getContentType("file." + targetFileType)
       characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-      response.headers += ("Content-Location" -> request.getRequestURI) // Canonicalise this?
       response.headers += ("ETag" -> stringHash(request.getRequestURI))
 
       // Truncate results if requested.
@@ -126,8 +125,13 @@ class ResourceServlet(resolver: FileResolver,
 
       // Write resulting data.
       if (imageSettings.hasSettings || targetExtension.isDefined) {
-        time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings) }
+        val callback: ImageSettings => Unit = (effectiveSettings) => {
+          response.headers += ("Content-Location" -> canonicalUri(baseFilename, effectiveSettings))
+        }
+
+        time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings, Some(callback)) }
       } else {
+        response.headers += ("Content-Location" -> request.getRequestURI)
         time("direct write", Debug) { copy(boundedInput, response.getOutputStream) }
       }
 

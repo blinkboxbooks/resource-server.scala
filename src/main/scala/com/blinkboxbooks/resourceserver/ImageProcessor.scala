@@ -1,23 +1,27 @@
 package com.blinkboxbooks.resourceserver
 
-import java.io._
-import javax.imageio._
-import javax.imageio.stream._
 import java.awt.image.BufferedImage
-import resource._
-import Utils._
-import org.imgscalr.Scalr
-import org.imgscalr.Scalr.resize
-import org.imgscalr.Scalr.Mode
-import org.imgscalr.Scalr.Mode._
-import org.imgscalr.Scalr.Method
+import java.io._
 import java.util.concurrent.Executors
+
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
+import org.imgscalr.Scalr
+import org.imgscalr.Scalr.Method
+import org.imgscalr.Scalr.Mode
+import org.imgscalr.Scalr.Mode._
+import org.imgscalr.Scalr.resize
+
 import com.typesafe.scalalogging.slf4j.Logging
+
+import Utils._
+import javax.imageio._
+import javax.imageio.stream._
+import resource._
 
 /** Types for each of the possible ways to resize an image. */
 sealed abstract class ResizeMode
@@ -66,10 +70,23 @@ trait ImageProcessor {
    *  @param outputFiletype     A string such as "jpg" or "png" that describes the type of file format to write the resize image to.
    *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param resizeSettings     Settings for the converted image.
+   *  @param listener           An optional callback that can be used for getting details about the produced image, before this image
+   *                            is written to the output.
    *
    *  @throws Exception if the given filetype is unknown.
    */
-  def transform(fileType: String, input: InputStream, output: OutputStream, resizeSettings: ImageSettings)
+  def transform(fileType: String, input: InputStream, output: OutputStream,
+    resizeSettings: ImageSettings, imageCallback: Option[ImageSettings => Unit] = None)
+
+}
+
+/**
+ * Trait for getting callbacks after images have been created.
+ */
+trait ImageSettingsListener {
+
+  /** Notification of the real settings for a created image. */
+  def newImage(effectiveSettings: ImageSettings)
 
 }
 
@@ -78,6 +95,8 @@ trait ImageProcessor {
  * image processing in a thread pool with a limited number of threads.
  */
 class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Logging with TimeLogging {
+
+  import ThreadPoolImageProcessor._
 
   // Execute conversions in a fixed size thread pool, to limit the number of concurrent jobs,
   // hence guarding against running out of memory under heavy load.
@@ -88,7 +107,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   // Disables disk caching for image files, makes reading image files faster.
   ImageIO.setUseCache(false)
 
-  override def transform(outputFileType: String, input: InputStream, output: OutputStream, settings: ImageSettings) {
+  override def transform(outputFileType: String, input: InputStream, output: OutputStream,
+    settings: ImageSettings, imageCallback: Option[ImageSettings => Unit]) {
 
     // Read the original image.
     for (originalImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
@@ -114,6 +134,13 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
           }
         }
       ) {
+        // Make callback if required.
+        imageCallback.foreach { fn =>
+          val effectiveSettings = new ImageSettings(width = Some(image.getWidth), height = Some(image.getHeight),
+            mode = settings.mode.orElse(Some(Scale)), quality = settings.quality.orElse(Some(DefaultQuality)))
+          fn.apply(effectiveSettings)
+        }
+
         // Convert the resulting image to the desired format.
         val writers = ImageIO.getImageWritersByFormatName(outputFileType)
         if (!writers.hasNext) throw new Exception(s"Unknown file type '$outputFileType'")
@@ -123,7 +150,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         if (imageParams.canWriteCompressed()) {
           imageParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
           imageParams.setCompressionType(imageParams.getCompressionTypes()(0))
-          imageParams.setCompressionQuality(settings.quality getOrElse 0.85f)
+          imageParams.setCompressionQuality(settings.quality getOrElse DefaultQuality)
         }
 
         val imageOutputStream = new MemoryCacheImageOutputStream(output)
@@ -152,6 +179,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
 }
 
 object ThreadPoolImageProcessor {
+
+  val DefaultQuality = 0.85f
 
   /**
    * Calculate the part of an image to crop using a gravity parameter,

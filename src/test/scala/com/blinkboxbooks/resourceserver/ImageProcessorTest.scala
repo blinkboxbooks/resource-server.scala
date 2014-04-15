@@ -6,6 +6,9 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
+import org.mockito.Mockito.spy
+import org.mockito.Mockito.verify
+import org.mockito.Matchers.any
 
 object ImageProcessorTest {
   // Fixed test data.
@@ -26,9 +29,9 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   def data(output: ByteArrayOutputStream) = new ByteArrayInputStream(output.toByteArray())
 
   before {
-      output = new ByteArrayOutputStream()
+    output = new ByteArrayOutputStream()
   }
-  
+
   test("No image settings given") {
     // Allow this, e.g. for trans-coding.
     processor.transform("jpeg", jpegImage, output, new ImageSettings())
@@ -85,9 +88,18 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
     Seq((80, 50), (50, 50), (50, 20)).foreach {
       case (w: Int, h: Int) =>
         val output = new ByteArrayOutputStream()
+        var called = false
+        val callback = (effectiveSettings: ImageSettings) => {
+          assert(effectiveSettings.width === Some(w))
+          assert(effectiveSettings.height === Some(h))
+          assert(effectiveSettings.quality === Some(ThreadPoolImageProcessor.DefaultQuality))
+          assert(effectiveSettings.gravity === Some(Gravity.Center))
+          called = true
+        }
         processor.transform("jpeg", jpegImage, output,
-          new ImageSettings(width = Some(w), height = Some(h), mode = Some(Stretch)))
+          new ImageSettings(width = Some(w), height = Some(h), mode = Some(Stretch)), imageCallback = Some(callback))
         checkImage(data(output), "jpeg", w, h)
+        assert(called, "Should have called callback with image details")
     }
   }
 
@@ -97,9 +109,17 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
       case (w: Int, h: Int) =>
         for (g <- Gravity.values) {
           val output = new ByteArrayOutputStream()
+          var called = false
+          val callback = (effectiveSettings: ImageSettings) => {
+            assert(effectiveSettings.width === Some(w))
+            assert(effectiveSettings.height === Some(h))
+            assert(effectiveSettings.quality === Some(ThreadPoolImageProcessor.DefaultQuality))
+            called = true
+          }
           processor.transform("jpeg", jpegImage, output,
-            new ImageSettings(width = Some(w), height = Some(h), mode = Some(Crop), gravity = Some(g)))
+            new ImageSettings(width = Some(w), height = Some(h), mode = Some(Crop), gravity = Some(g)), imageCallback = Some(callback))
           checkImage(data(output), "jpeg", w, h)
+          assert(called, "Should have called callback with image details")
         }
     }
   }

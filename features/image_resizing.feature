@@ -113,9 +113,10 @@ Feature: Image resizing
       | Image: Width  | 1000             |
       | Image: Height | <request height> |
     Then the "Content-Location" header references this image with the following filters:
-      | Image: Mode   | Scale              |
-      | Image: Width  | 1000               |
-      | Image: Height | <resulting height> |
+      | Image: Mode    | Scale              |
+      | Image: Width   | 1000               |
+      | Image: Height  | <resulting height> |
+      | Image: Quality | 85                 |
 
     Examples: Heights 500 px or bigger that will make no difference to the output image in 'scale' mode
       | request height | resulting height |
