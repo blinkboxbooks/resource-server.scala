@@ -81,16 +81,6 @@ trait ImageProcessor {
 }
 
 /**
- * Trait for getting callbacks after images have been created.
- */
-trait ImageSettingsListener {
-
-  /** Notification of the real settings for a created image. */
-  def newImage(effectiveSettings: ImageSettings)
-
-}
-
-/**
  * Implementation of image processor that uses the imgscalr AsyncScalr class to perform
  * image processing in a thread pool with a limited number of threads.
  */
