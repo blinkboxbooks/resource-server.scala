@@ -4,22 +4,24 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.IOException
+import java.nio.file.CopyOption
 import java.nio.file.Path
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption._
+import java.nio.file.StandardCopyOption._
+import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import javax.imageio.stream.FileImageOutputStream
 import javax.imageio.stream.ImageOutputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
-import java.awt.image.BufferedImage
 import org.imgscalr.Scalr
 import org.imgscalr.Scalr.Method
 import org.imgscalr.Scalr.Mode
 import com.typesafe.scalalogging.slf4j.Logging
-import resource._
-import Utils._
 import scala.util.Try
 import scala.util.control.NonFatal
+import resource._
+import Utils._
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -56,31 +58,19 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
 
   override def addImage(path: String) {
     logger.debug(s"Caching image at $path")
-    val original = resolver.resolve(path).get
     for (
-      input <- managed(original);
-      image <- managed(ImageIO.read(input))
+      input <- managed(resolver.resolve(path).get);
+      originalImage <- managed(ImageIO.read(input))
     ) {
-      if (image == null) throw new IOException(s"Unable to decode image at $path")
+      if (originalImage == null) throw new IOException(s"Unable to decode image at $path")
+      
+      // Generate images at each of intermediate sizes that we keep.
       for (
         size <- targetSizes;
-        resized <- managed(Scalr.resize(image, Method.BALANCED, Mode.AUTOMATIC, size))
+        resizedImage <- managed(Scalr.resize(originalImage, Method.BALANCED, Mode.AUTOMATIC, size))
       ) {
         val outputPath = cachedFilePath(path, size)
-        val outputFile = root.resolve(outputPath)
-
-        Files.createDirectories(outputFile.getParent())
-        try {
-          for (output <- managed(Files.newOutputStream(outputFile, CREATE, TRUNCATE_EXISTING))) {
-            writeFile(resized, output)
-            logger.debug("Wrote output file: " + outputFile + " with dimensions (" + resized.getWidth() + "[w], "
-              + resized.getHeight() + "[h])")
-          }
-        } catch {
-          case NonFatal(e) =>
-            if (Files.exists(outputFile)) Files.delete(outputFile)
-            throw e
-        }
+        safelyWriteFile(resizedImage, outputPath)
       }
     }
   }
@@ -96,7 +86,32 @@ class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) 
   /** Check whether this cache is configured with any image sizes that are within the given size. */
   override def wouldCacheImage(size: Option[Int]) = size.isDefined && size.get <= targetSizes.max
 
+  /** Returns the path where an image of a given size would be stored. */
   private def cachedFilePath(path: String, size: Int) = s"${size}x${size}" + File.separator + path
+
+  /**
+   * Atomically write an image file to disk, creating any necessary parent directories.
+   * Ensures that no partially file is left behind if an exception happens part way through writing.
+   */
+  private def safelyWriteFile(image: BufferedImage, outputPath: String) = {
+    // Write file to temporary file, then do an atomic update when ready.
+    // This ensures that threads looking for cached files don't get a partially written file.
+    val tmpOutputFile = root.resolve(outputPath + ".work")
+    Files.createDirectories(tmpOutputFile.getParent())
+    try {
+      for (tmpOutput <- managed(Files.newOutputStream(tmpOutputFile, CREATE, TRUNCATE_EXISTING))) {
+        writeFile(image, tmpOutput)
+        val outputFile = root.resolve(outputPath)
+        Files.move(tmpOutputFile, outputFile, ATOMIC_MOVE, REPLACE_EXISTING)
+        logger.debug("Wrote image file: " + outputFile + " with dimensions (" + image.getWidth() + "[w], "
+          + image.getHeight() + "[h])")
+      }
+    } catch {
+      case NonFatal(e) =>
+        if (Files.exists(tmpOutputFile)) Files.delete(tmpOutputFile)
+        throw e
+    }
+  }
 
   private def writeFile(image: BufferedImage, output: OutputStream) {
     for (

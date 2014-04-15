@@ -13,6 +13,7 @@ class ImageRequestsSimulation extends Simulation {
 
   val root = "/Users/jans/data/resources/"
   val paths = findPaths(root, Set("png", "jpeg", "jpeg")).random
+  //val paths = Array(Map("path" -> "9780/709/092/599/7fca309750b4593280ebf85db9a080a9.png")).random
 
   val outputSizes = Array(99, 150, 153, 167, 330, 362, 366, 731)
   val sizes = outputSizes.zip(Stream.continually("size")).map { case (k, v) => Map(v -> k.toString) }.random
