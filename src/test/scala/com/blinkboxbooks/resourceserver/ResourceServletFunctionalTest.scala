@@ -70,7 +70,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     get("sub/ch02.html") {
       assert(status === 200)
       checkIsCacheable()
-      assert(header("Content-Location") === ("/sub/ch02.html"))
+      assert(header("Content-Location") === "/sub/ch02.html")
       val expectedExpiryTime = 365 * 24 * 60 * 60
       assert(header("expires_in").toInt === expectedExpiryTime)
       assert(header("Cache-Control") === s"public, max-age=$expectedExpiryTime")
@@ -209,10 +209,11 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   test("Specify image quality setting for PNG file") {
-    get(s"/params;img:w=160;img:q=85;v=0/test.epub/images/test.png") {
+    get(s"/params;img:q=85;img:w=160;v=0/test.epub/images/test.png") {
       // Should just ignore the quality setting.
       assert(status === 200)
       checkImage(response.inputStream, "png", 160, 100)
+      assert(header("Content-Location") === "/params;img:h=100;img:m=scale;img:q=85;img:w=160;v=0/test.epub/images/test.png")
     }
   }
 

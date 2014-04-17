@@ -1,12 +1,9 @@
 package com.blinkboxbooks.resourceserver
-
+import java.io.ByteArrayInputStream
+import scala.io.Source
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
-import java.io.StringReader
-import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
 class UtilsTest extends FunSuite {
@@ -20,6 +17,22 @@ class UtilsTest extends FunSuite {
     assert(stringHash("foo") == "acbd18db4cc2f85cedef654fccc4a4d8")
     assert(stringHash("foo bar") == "327b6f07435811239bc47e1544353273")
     assert(stringHash("http://some/path?foo=42") == "a3359beeee73615af0832b17da5dffe4")
+  }
+
+  test("Canonical URI with no parameters") {
+    assert(canonicalUri("foo/bar.baz", new ImageSettings(gravity = None)) === "/params;v=0/foo/bar.baz")
+  }
+
+  test("Canonical URI with full set of parameters, not cropped") {
+    val settings = new ImageSettings(height = Some(100), width = Some(140), quality = Some(0.42f), gravity = Some(Gravity.NorthWest),
+      mode = Some(Scale))
+    assert(canonicalUri("foo/bar.baz", settings) === "/params;img:h=100;img:m=scale;img:q=42;img:w=140;v=0/foo/bar.baz")
+  }
+
+  test("Canonical URI with full set of parameters, cropped") {
+    val settings = new ImageSettings(height = Some(100), width = Some(140), quality = Some(0.42f), gravity = Some(Gravity.NorthWest),
+      mode = Some(Crop))
+    assert(canonicalUri("foo/bar.baz", settings) === "/params;img:g=nw;img:h=100;img:m=crop;img:q=42;img:w=140;v=0/foo/bar.baz")
   }
 
   test("no byte range") {
