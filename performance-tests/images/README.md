@@ -12,10 +12,10 @@ bin/gatling.sh set the following if you have enough memory:
 
 conf/gatling.conf
 
-< 			percentile1 = 50						# in percents
-< 			percentile2 = 90						# in percents
-< 			allowPoolingConnection = false				# allow pooling HTTP connections (keep-alive header automatically added)
-< 			connectionTimeout = 1000					# timeout when establishing a connection
+ 			percentile1 = 50						# in percents
+ 			percentile2 = 90						# in percents
+ 			allowPoolingConnection = false				# allow pooling HTTP connections (keep-alive header automatically added)
+ 			connectionTimeout = 1000					# timeout when establishing a connection
 
 
 
