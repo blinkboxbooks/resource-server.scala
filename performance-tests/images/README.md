@@ -1,3 +1,5 @@
+<pre>
+
 Preparing Baldrick performance test
 -----------------------------------
 
@@ -19,7 +21,8 @@ conf/gatling.conf
 
 to test the MD5 response check:
 set the resource server document root to point to the baldrick test-files directory
-run the duplicate script that copies the big-0000.png file 10000 times
+
+run the duplicate script that copies the big-0000.png and epub files 10000 times
 
 Running Baldrick performance test
 ---------------------------------
@@ -38,3 +41,4 @@ run test by executing:
 
 <gatling2 home>/bin/gatling.sh -sf <baldrick home>/performance-tests/images/
 
+</pre>

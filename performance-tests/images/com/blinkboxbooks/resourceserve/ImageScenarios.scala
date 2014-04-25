@@ -14,39 +14,35 @@ import java.io.FileInputStream
  *
  * Gatling 2
  *
+ * All HTTP calls must be fully qualified URLS
+ * 
  * https://github.com/excilys/gatling/wiki/Advanced-Usage#modularization
- * 
+ *
  * https://groups.google.com/forum/#!msg/gatling/N9XAdK-aJ1c/oFzqySmzDNEJ
- * 
+ *
  * -----------------------------------------
- * 
+ *
  * TEST SET UP :
- * 
+ *
  * see the README.md in the images directory.
- * 
+ *
  * </pre>
  */
-object ImageScenarios extends ScenarioUtils {
+object ImageScenarios {
 
-    // SETUP ------------------------------------------------------
-  
-      val prop = new Properties()
-      prop.load(new FileInputStream("./ResourceServerScenarios.properties"))
-      val filesPath = prop.getProperty("filesPath")
-      val maxDynamicResponseTimeInMillis1 = prop.getProperty("maxDynamicResponseTimeInMillis")
-      val maxDynamicResponseTimeInMillis = maxDynamicResponseTimeInMillis1.toLong
-      val maxStaticResponseTimeInMillis1 = prop.getProperty("maxStaticResponseTimeInMillis")
-      val maxStaticResponseTimeInMillis = maxStaticResponseTimeInMillis1.toLong
-  
+  import ScenarioUtils._
+
+  // SETUP ------------------------------------------------------
+
   val paths = findPaths(filesPath, Set("png", "jpg", "jpeg")).random
   //val paths = Array(Map("path" -> "9780/709/092/599/7fca309750b4593280ebf85db9a080a9.png")).random
 
   val outputSizes = Array(99, 150, 153, 167, 330, 362, 366, 731)
   val sizes = outputSizes.zip(Stream.continually("size")).map { case (k, v) => Map(v -> k.toString) }.random
 
-  val outputQualities = Array(50,75,80,85)
+  val outputQualities = Array(50, 75, 80, 85)
   val qualities = outputQualities.zip(Stream.continually("quality")).map { case (k, v) => Map(v -> k.toString) }.random
-  
+
   /**
    * md5's for different sizes of big-NNNNN.png files
    */
@@ -61,108 +57,105 @@ object ImageScenarios extends ScenarioUtils {
     ("731" -> "54fd3ed57a00f9c14a1c8aff5a0863e9"),
     ("99" -> "93f79354fa351591f51df60ef6262a24"))
 
-    // REQUESTS ------------------------------------------------------
-    
-    val get_md5 = exec((s: Session) => {
-        val expectedMD5 = expectedHashes(s("size").as[String])
-        s.set("expectedMD5", expectedMD5)
-      })
-    
-    val resizeImageRequest = exec(
-      http("file image size w=${size}")
-        .get("/params;img:w=${size};img:m=scale;v=0/${path}.jpg")
-        .check(status.is(200))
-        // uncomment this if you are testing with the big-NNNN.png files
-        //.check(md5.is("${expectedMD5}"))
-            .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis))
-      )
-    
-        val notfoundImageRequest = exec(
-      http("file image not found")
-        .get("/params;img:w=${size};img:m=scale;v=0/doesnotexist.jpg")
-        .check(status.is(404))
-            .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis))
-      )
-        
-        val qualityImageRequest = exec(
-      http("file image low quality")
-        .get("/params;img:w=${size};img:m=scale;img:q=${quality};v=0/${path}.jpg")
-        .check(status.is(200))
-            .check(responseTimeInMillis.lessThan(300))
-      )
-        
-        val invalidImageRequest = exec(
-      http("file image invalid1")
-        .get("/params;img:w=-1;img:m=scale;img:q=-1;v=0/${path}.jpg?")
-        .check(status.is(400))
-            .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis))
-      )
-        
-        val invalidImageRequest2 = exec(
-      http("file image invalid2")
-        .get("/../../../../../../../../../../../../etc/hosts")
-        .check(status.is(400))
-            .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis))
-      )
-        
-        //  should return response code 400 & "Server version #NN is not yet specified."
-        val invalidVersionImageRequest = exec(
-      http("file image invalid version")
-        .get("/params;img:w=1;img:m=scale;img:q=99;v=99/${path}.jpg")
-        .check(status.is(400))
-        .check(regex("Server version #99 is not yet specified."))
-            .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis))
-      )
-        
-        // gravity img:m=crop , img:g=nwsec|ne|we
-        val gravityImageRequest = exec(
-      http("file image gravity")
-        .get("/params;img:w=200;img:m=scale;img:q=85;v=0;img:m=crop;img:g=n/${path}.jpg")
-        .check(status.is(200))
-            .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis))
-      )
-        
-    // SCENARIOS ------------------------------------------------------
-    
+  // REQUESTS ------------------------------------------------------
+
+  val get_md5 = exec((s: Session) => {
+    val expectedMD5 = expectedHashes(s("size").as[String])
+    s.set("expectedMD5", expectedMD5)
+  })
+
+  val resizeImageRequest = exec(
+    http("file image size w=${size}")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;v=0/${path}.jpg")
+      .headers(media_headers)
+      .check(status.is(200))
+      // uncomment this if you are testing with the big-NNNN.png files
+      //.check(md5.is("${expectedMD5}"))
+      .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
+
+  val notfoundImageRequest = exec(
+    http("file image not found")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;v=0/doesnotexist.jpg")
+      .headers(media_headers)
+      .check(status.is(404))
+      .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
+
+  val qualityImageRequest = exec(
+    http("file image low quality")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;img:q=${quality};v=0/${path}.jpg")
+      .headers(media_headers)
+      .check(status.is(200))
+      .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
+
+  val invalidImageRequest = exec(
+    http("file image invalid1")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=-1;img:m=scale;img:q=-1;v=0/${path}.jpg?")
+      .headers(media_headers)
+      .check(status.is(400))
+      .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
+
+  val invalidImageRequest2 = exec(
+    http("file image invalid2")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/../../../../../../../../../../../../etc/hosts")
+      .headers(media_headers)
+      .check(status.is(400))
+      .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
+
+  //  should return response code 400 & "Server version #NN is not yet specified."
+  val invalidVersionImageRequest = exec(
+    http("file image invalid version")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=1;img:m=scale;img:q=99;v=99/${path}.jpg")
+      .headers(media_headers)
+      .check(status.is(400))
+      .check(regex("Server version #99 is not yet specified."))
+      .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
+
+  // gravity img:m=crop , img:g=nwsec|ne|we
+  val gravityImageRequest = exec(
+    http("file image gravity")
+      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=200;img:m=scale;img:q=85;v=0;img:m=crop;img:g=n/${path}.jpg")
+      .headers(media_headers)
+      .check(status.is(200))
+      .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
+
+  // SCENARIOS ------------------------------------------------------
+
   val imageResizingScn = scenario("pseudo-random sequence of file images")
     .feed(paths)
     .feed(sizes)
-    .exec(group("processed images"){
-      //group("resized images"){
-        // uncomment this if you are testing with the big-NNNN.png files to check the MD5 of the response...
-        //get_md5,
-        resizeImageRequest}//}
-)
+    .exec(group("processed images") {
+      // uncomment this if you are testing with the big-NNNN.png files to check the MD5 of the response...
+      //get_md5,
+      resizeImageRequest
+    })
 
   val imageNotFoundScn = scenario("not found file images")
     .feed(sizes)
-    .exec(group("invalid images"){notfoundImageRequest})
+    .exec(group("invalid images") { notfoundImageRequest })
 
   val imageQualityScn = scenario("reduced quality file images")
     .feed(paths)
     .feed(sizes)
     .feed(qualities)
-    .exec(group("processed images"){qualityImageRequest})
+    .exec(group("processed images") { qualityImageRequest })
 
-    
   val invalidImages1Scn = scenario("invalid1 file images")
     .feed(paths)
     .feed(sizes)
-    .exec(group("invalid images"){invalidImageRequest})
-    
-    
+    .exec(group("invalid images") { invalidImageRequest })
+
   val invalidImages2Scn = scenario("invalid2 file images")
     .feed(paths)
     .feed(sizes)
-    .exec(group("invalid images"){invalidImageRequest2})
-    
+    .exec(group("invalid images") { invalidImageRequest2 })
+
   val invalidVersionImageScn = scenario("invalid version file images")
     .feed(paths)
     .feed(sizes)
-    .exec(group("invalid images"){invalidVersionImageRequest})
-    
+    .exec(group("invalid images") { invalidVersionImageRequest })
+
   val gravityImageScn = scenario("gravity file images")
     .feed(paths)
     .feed(sizes)
-    .exec(group("processed images"){gravityImageRequest})
+    .exec(group("processed images") { gravityImageRequest })
 }
