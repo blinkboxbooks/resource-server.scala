@@ -1,5 +1,11 @@
 # Change log
 
+## 0.1.8 ([#16](https://git.mobcastdev.com/Platform/baldrick/pull/16) 2014-04-28 13:46:05)
+
+Use number of CPUs - 1 for background processing of images
+
+This is a patch requested by @alexb to use one less than the number of CPUs to do background processing of images.
+
 ## 0.1.7 ([#13](https://git.mobcastdev.com/Platform/baldrick/pull/13) 2014-04-28 10:28:32)
 
 Gatling tests
