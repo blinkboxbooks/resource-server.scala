@@ -68,6 +68,7 @@ class ResourceServlet(resolver: FileResolver,
       val captures = multiParams("captures")
       val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
       
+      // Check that version is well known, otherwise return an error.
       imageParams.get("v") match {
         case Some("0") => // OK.
         case Some(v) if Try(v.toInt).isFailure => halt(400, s"Server version should be specified as an integer value")
