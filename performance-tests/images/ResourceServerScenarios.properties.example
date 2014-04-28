@@ -1,0 +1,21 @@
+# set to the document root directory of the localhost test instance of the resource server
+# the 'data_dir' in the resource server properties
+filesPath=
+
+maxDynamicResponseTimeInMillis=300
+maxStaticResponseTimeInMillis=100
+
+apiScheme=
+apiHostname=
+apiPort=
+wwwScheme=
+wwwHostname=
+wwwPort=
+authScheme=
+authHostname=
+authPort=
+mediaScheme=http
+mediaHostname=localhost
+mediaPort=8080
+
+

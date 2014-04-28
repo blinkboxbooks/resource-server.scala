@@ -1,0 +1,15 @@
+usersPerSec=15
+rampSeconds=60
+constantLoadSeconds=1800
+
+# NOTE: depends on percentile1 and percentile2 being set to 50 and 90 in gatling.conf ...
+
+medianDynamicResponseTimeInMillis=100
+_90THDynamicResponseTimeInMillis=250
+maxDynamicResponseTimeInMillis=500
+
+medianStaticResponseTimeInMillis=30
+_90THStaticResponseTimeInMillis=70
+maxStaticResponseTimeInMillis=100
+
+successfulRequestsPercent=100
