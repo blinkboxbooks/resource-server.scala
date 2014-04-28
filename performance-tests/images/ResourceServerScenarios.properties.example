@@ -1,4 +1,6 @@
-filesPath=/Users/alexb/blinkbox/perf/resource_server/scala/files/
+# set to the document root directory of the localhost test instance of the resource server
+# the 'data_dir' in the resource server properties
+filesPath=
 
 maxDynamicResponseTimeInMillis=300
 maxStaticResponseTimeInMillis=100
