@@ -32,6 +32,8 @@ delete any cached files
 start the resource server
 
 edit the test properties for this test on this environment:
+-> test properties are located in <baldrick home>/performance-tests/images/
+-> rename from *.properties.example to *.properties
 ImageScenarios.properties
 ImageSimulations.properties
 
@@ -40,5 +42,9 @@ edit the ImageScenarios.scala to include or exclude the MD5 response size check
 run test by executing:
 
 <gatling2 home>/bin/gatling.sh -sf <baldrick home>/performance-tests/images/
+
+you can also add an alias into your .profile if running on unix:
+alias grun='<gatling2 home>/bin/gatling.sh'
+or environment or PATH variable updates, whatever is easiest.
 
 </pre>
