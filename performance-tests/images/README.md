@@ -41,7 +41,7 @@ edit the ImageScenarios.scala to include or exclude the MD5 response size check
 
 run test by executing:
 
-<gatling2 home>/bin/gatling.sh -sf <baldrick home>/performance-tests/images/
+<gatling2_home>/bin/gatling.sh -sf <baldrick home>/performance-tests/images/ -s com.blinkboxbooks.resourceserve.ResourceServerSimulation
 
 you can also add an alias into your .profile if running on unix:
 alias grun='<gatling2 home>/bin/gatling.sh'
