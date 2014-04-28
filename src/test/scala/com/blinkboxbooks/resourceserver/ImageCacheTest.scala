@@ -29,7 +29,10 @@ import java.io.ByteArrayOutputStream
 @RunWith(classOf[JUnitRunner])
 class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks with MockitoSugar {
 
-  val sizes = Set(500, 100, 1000)
+  val MinSize = 50
+  val MidSize = 100
+  val MaxSize = 200
+  val sizes = Set(MidSize, MinSize, MaxSize)
   val filePath = "some/path/to/file/test.png"
 
   val largeFile = new ByteArrayOutputStream()
@@ -53,6 +56,7 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
   }
 
   after {
+    reset(resolver)
     fs.close()
   }
 
@@ -71,19 +75,19 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
   test("add then get image at various sizes") {
     addImage(filePath)
 
-    for (width <- Seq(50, 99, 100)) {
-      checkIsCached(width, 100)
+    for (width <- Seq(MinSize / 2, MinSize - 1, MinSize)) {
+      checkIsCached(width, MinSize)
     }
 
-    for (width <- Seq(101, 150, 250, 499, 500)) {
-      checkIsCached(width, 500)
+    for (width <- Seq(MinSize + 1, MinSize + 5, MinSize + ((MidSize - MinSize) / 2), MidSize - 1, MidSize)) {
+      checkIsCached(width, MidSize)
     }
 
-    for (width <- Seq(501, 750, 999, 1000)) {
-      checkIsCached(width, 1000)
+    for (width <- Seq(MidSize + 1, MidSize + ((MaxSize - MidSize) / 2), MaxSize - 1, MaxSize)) {
+      checkIsCached(width, MaxSize)
     }
 
-    for (width <- Seq(1001, 2000)) {
+    for (width <- Seq(MaxSize + 1, MaxSize + 10)) {
       assert(cache.getImage(filePath, width) === None)
     }
   }
@@ -94,8 +98,8 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     addImage(filePath)
 
     // Should just work as normal.
-    for (width <- Seq(50, 99, 100)) {
-      checkIsCached(width, 100)
+    for (width <- Seq(MinSize / 2, MinSize - 1, MinSize)) {
+      checkIsCached(width, MinSize)
     }
   }
 

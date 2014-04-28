@@ -1,6 +1,7 @@
 package com.blinkboxbooks.resourceserver
 
 import org.junit.runner.RunWith
+import org.scalatra.util.RicherString._
 import org.scalatra.test.scalatest.ScalatraSuite
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.junit.JUnitRunner
@@ -227,6 +228,28 @@ class ResourceServletUnitTest extends ScalatraSuite
       assert(status === 400)
       assert(body.toLowerCase.matches(".*quality.*"))
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
+    }
+  }
+
+  test("Get request with no version") {
+    get("/params;w=500/test/content/image.gif.png") {
+      assert(status === 400)
+      assert(body.toLowerCase.contains("no version"))
+    }
+  }
+
+  test("Get request with non-matching version") {
+    get("/params;v=1/test/content/image.gif.png") {
+      assert(status === 400)
+      assert(body.contains("Server version 1 is not yet specified"), s"got ${body}")
+    }
+  }
+
+  test("XSS attack on server version") {
+    get("/params;v=<script>alert('attacked')</script>/test/content/image.gif.png".urlEncode) {
+      assert(status === 400)
+      assert(body.matches(".*should be.*integer.*"))
+      assert(!body.contains("<script>"))
     }
   }
 
