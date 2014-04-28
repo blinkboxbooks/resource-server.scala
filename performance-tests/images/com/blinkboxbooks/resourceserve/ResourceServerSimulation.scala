@@ -2,11 +2,11 @@ package com.blinkboxbooks.resourceserve
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
-
 import scala.concurrent.duration._
 import java.util.Properties
 import java.io.FileInputStream
 import io.gatling.http.config.HttpProxyBuilder.toProxy
+import io.gatling.core.controller.inject.InjectionStep
 
 /**
  * Resource server simulation
@@ -25,67 +25,56 @@ class ResourceServerSimulation extends BlinkboxSimulation {
 
   // SPECIFIC PROPERTIES ------------------------------------------------------
 
+  val imageScenarios = ImageScenarios
+  val epubScenarios = EpubScenarios
+  
   // HTTP CONFIG ------------------------------------------------------
 
   val httpConf = httpConfNoProxy
+  .baseURL(ScenarioUtils.mediaScheme + "://" + ScenarioUtils.mediaHostname + ":" + ScenarioUtils.mediaPort)
 
   // TEST PLAN ------------------------------------------------------
-
-  val imageScenarios = ImageScenarios
-  val epubScenarios = EpubScenarios
 
   setUp(
 
     imageScenarios.imageResizingScn.inject(
-      rampUsersPerSec(0.1) to (usersPerSec) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds))
+      fullRampUpRate,fullRampUpRate)
       .protocols(httpConf),
 
     imageScenarios.imageNotFoundScn.inject(
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     imageScenarios.imageQualityScn.inject(
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     imageScenarios.invalidImages1Scn.inject(
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     imageScenarios.invalidImages2Scn.inject(
-      // constantUsersPerSec(0.5).during(60 seconds)
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     imageScenarios.invalidVersionImageScn.inject(
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     imageScenarios.gravityImageScn.inject(
-      rampUsersPerSec(1) to (usersPerSec / 10) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec / 10).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     epubScenarios.epubImagesScn.inject(
-      // constantUsersPerSec(0.5).during(60 seconds)
-      rampUsersPerSec(1) to (usersPerSec) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     epubScenarios.epubHtmlScn.inject(
-      rampUsersPerSec(1) to (usersPerSec) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf),
 
     epubScenarios.epubSecretKeyScn.inject(
-      rampUsersPerSec(1) to (usersPerSec) during (rampSeconds seconds),
-      constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds))
+      _10thRampUpRate,_10thConstantRate)
       .protocols(httpConf)
       
     )

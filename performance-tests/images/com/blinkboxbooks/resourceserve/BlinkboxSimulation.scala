@@ -67,4 +67,13 @@ class BlinkboxSimulation extends Simulation {
   val httpConfProxy = httpConfNoProxy
     .proxy(Proxy("localhost", 8000).httpsPort(8001))
 
+    // Test plan ------------------------------------------------------
+    
+  val fullRampUpRate = rampUsersPerSec(0.1) to (usersPerSec) during (rampSeconds seconds)
+  val fullConstantRate = constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds)
+  
+  val _10thRampUpRate = rampUsersPerSec(0.1) to (usersPerSec/10) during (rampSeconds seconds)
+  val _10thConstantRate = constantUsersPerSec(usersPerSec/10).during(constantLoadSeconds seconds)
+  
+  
 }
