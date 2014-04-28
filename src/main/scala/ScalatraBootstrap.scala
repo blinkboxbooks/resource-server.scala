@@ -53,7 +53,12 @@ class ScalatraBootstrap extends LifeCycle with Logging {
     // Create a custom thread pool with a limited number of threads, a limited size queue, and
     // custom thread names.
     val cacheingThreadCount =
-      if (config.hasPath("cache.threads.count")) config.getInt("cache.threads.count") else Runtime.getRuntime().availableProcessors()
+      if (config.hasPath("cache.threads.count"))
+        config.getInt("cache.threads.count")
+      else
+        (Runtime.getRuntime().availableProcessors() - 1).max(1)
+    logger.info(s"Using $cacheingThreadCount threads for background resizing of images for cache")
+    
     val maximumCacheQueueSize = config.getInt("cache.queue.limit")
     val threadFactory = new BasicThreadFactory.Builder().namingPattern("image-caching-%d").build()
     val threadPool = new ThreadPoolExecutor(cacheingThreadCount, cacheingThreadCount, 0L, TimeUnit.MILLISECONDS,
