@@ -36,23 +36,26 @@ object EpubScenarios {
 
   // REQUESTS ------------------------------------------------------
 
+  // Absolute path is not currently supported by the Resource server
+  val prefix = mediaScheme + "://" + mediaHostname + ":" + mediaPort
+    
   val epubImageRequest = exec(
     http("epub image size w=${size} ${format}")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;v=0;img:w=${size};img:m=scale/${path}/images/test.${format}.jpg")
+      .get(prefix + "/params;v=0;img:w=${size};img:m=scale/${path}/images/test.${format}.jpg")
       .headers(media_headers)
       .check(status.is(200))
       .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
 
   val epubHtmlRequest = exec(
     http("epub html")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;v=0;/${path}/content/sub/ch01.html")
+      .get(prefix + "/params;v=0;/${path}/content/sub/ch01.html")
       .headers(media_headers)
       .check(status.is(200))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
 
       val secretKeyRequest = exec(
     http("epub secret key")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;v=0;/${path}/secret.key")
+      .get(prefix + "/params;v=0;/${path}/secret.key")
       .headers(media_headers)
       .check(status.is(404))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))

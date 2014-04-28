@@ -64,9 +64,12 @@ object ImageScenarios {
     s.set("expectedMD5", expectedMD5)
   })
 
+  // Absolute path is not currently supported by the Resource server
+  val prefix = mediaScheme + "://" + mediaHostname + ":" + mediaPort
+  
   val resizeImageRequest = exec(
     http("file image size w=${size}")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;v=0/${path}.jpg")
+      .get(prefix + "/params;img:w=${size};img:m=scale;v=0/${path}.jpg")
       .headers(media_headers)
       .check(status.is(200))
       // uncomment this if you are testing with the big-NNNN.png files
@@ -75,28 +78,28 @@ object ImageScenarios {
 
   val notfoundImageRequest = exec(
     http("file image not found")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;v=0/doesnotexist.jpg")
+      .get(prefix + "/params;img:w=${size};img:m=scale;v=0/doesnotexist.jpg")
       .headers(media_headers)
       .check(status.is(404))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
 
   val qualityImageRequest = exec(
     http("file image low quality")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=${size};img:m=scale;img:q=${quality};v=0/${path}.jpg")
+      .get(prefix + "/params;img:w=${size};img:m=scale;img:q=${quality};v=0/${path}.jpg")
       .headers(media_headers)
       .check(status.is(200))
       .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
 
   val invalidImageRequest = exec(
     http("file image invalid1")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=-1;img:m=scale;img:q=-1;v=0/${path}.jpg?")
+      .get(prefix + "/params;img:w=-1;img:m=scale;img:q=-1;v=0/${path}.jpg?")
       .headers(media_headers)
       .check(status.is(400))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
 
   val invalidImageRequest2 = exec(
     http("file image invalid2")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/../../../../../../../../../../../../etc/hosts")
+      .get(prefix + "/../../../../../../../../../../../../etc/hosts")
       .headers(media_headers)
       .check(status.is(400))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
@@ -104,7 +107,7 @@ object ImageScenarios {
   //  should return response code 400 & "Server version #NN is not yet specified."
   val invalidVersionImageRequest = exec(
     http("file image invalid version")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=1;img:m=scale;img:q=99;v=99/${path}.jpg")
+      .get(prefix + "/params;img:w=1;img:m=scale;img:q=99;v=99/${path}.jpg")
       .headers(media_headers)
       .check(status.is(400))
       .check(regex("Server version #99 is not yet specified."))
@@ -113,7 +116,7 @@ object ImageScenarios {
   // gravity img:m=crop , img:g=nwsec|ne|we
   val gravityImageRequest = exec(
     http("file image gravity")
-      .get(mediaScheme + "://" + mediaHostname + ":" + mediaPort + "/params;img:w=200;img:m=scale;img:q=85;v=0;img:m=crop;img:g=n/${path}.jpg")
+      .get(prefix + "/params;img:w=200;img:m=scale;img:q=85;v=0;img:m=crop;img:g=n/${path}.jpg")
       .headers(media_headers)
       .check(status.is(200))
       .check(responseTimeInMillis.lessThan(maxDynamicResponseTimeInMillis)))
