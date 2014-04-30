@@ -1,4 +1,4 @@
-package com.blinkboxbooks.resourceserve
+package com.blinkboxbooks.resourceserver
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._

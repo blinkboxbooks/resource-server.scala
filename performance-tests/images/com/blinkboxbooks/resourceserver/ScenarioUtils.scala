@@ -1,4 +1,4 @@
-package com.blinkboxbooks.resourceserve
+package com.blinkboxbooks.resourceserver
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
@@ -33,7 +33,7 @@ object ScenarioUtils {
   def findPaths(root: String, extensions: Set[String]): Array[Map[String, String]] =
     findFiles(new File(root))
       .filter(matchesExtension(_, extensions))
-      .map(f => Map("path" -> f.getPath.drop(root.length)))
+      .map(f => Map("path" -> f.getPath.drop(root.length + 1)))
       .toArray
 
   def findFiles(f: File): Stream[File] =
@@ -45,7 +45,7 @@ object ScenarioUtils {
   def findPaths(root: String, path: String, extensions: Set[String]): Array[Map[String, String]] =
     findFiles(new File(root + path))
       .filter(matchesExtension(_, extensions))
-      .map(f => Map("path" -> f.getPath.drop(root.length)))
+      .map(f => Map("path" -> f.getPath.drop(root.length + 1)))
       .toArray
 
   // HTTP Config -  for each domain
