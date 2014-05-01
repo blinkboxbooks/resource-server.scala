@@ -38,7 +38,7 @@ class ResourceServerSimulation extends BlinkboxSimulation {
   setUp(
 
     imageScenarios.imageResizingScn.inject(
-      fullRampUpRate,fullRampUpRate)
+      fullRampUpRate,fullConstantRate)
       .protocols(httpConf),
 
     imageScenarios.imageNotFoundScn.inject(
