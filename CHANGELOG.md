@@ -1,5 +1,11 @@
 # Change log
 
+## 0.1.10 ([#18](https://git.mobcastdev.com/Platform/baldrick/pull/18) 2014-05-01 13:48:52)
+
+patch change for copy and paste typo in load profile
+
+patch change to fix copy and paste typo in load profile
+
 ## 0.1.9 ([#17](https://git.mobcastdev.com/Platform/baldrick/pull/17) 2014-04-30 16:39:02)
 
 Fixes to performance tests
