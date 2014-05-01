@@ -63,6 +63,8 @@ class ResourceServletUnitTest extends ScalatraSuite
       verify(fileResolver).resolve("test.jpeg")
       verify(inputStream, atLeastOnce).close()
       verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
+      // Why does a Scala API return null??
+      assert(header(ResourceServlet.CACHE_INDICATION_HEADER) === null)
     }
   }
 
@@ -118,6 +120,7 @@ class ResourceServletUnitTest extends ScalatraSuite
 
     get("/params;img:w=160;img:h=120;img:q=42;img:m=crop;img:g=n;v=0/test.epub/test/content/images/test.jpeg") {
       assert(status === 200)
+      assert(header(ResourceServlet.CACHE_INDICATION_HEADER) === "true")
       val imageSettings = new ImageSettings(
         width = Some(160), height = Some(120), quality = Some(0.42f), mode = Some(Crop), gravity = Some(Gravity.North))
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
