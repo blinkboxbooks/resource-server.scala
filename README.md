@@ -98,12 +98,15 @@ Edit the test properties files for your environment (e.g. to point at the resour
 * Rename the from `*.properties.example` to `*.properties`, to create the following files:
   * ImageScenarios.properties
   * ImageSimulations.properties
-* Set the resource server document root to point to the baldrick test-files directory.
+* Set the resource server document root to point to the `<baldrick root>/performance-test/images/test-files` directory.
 * Run the script `test-files/duplicate.sh' that copies the big-0000.png and epub files 10,000 times.
 
 To include checking of the content of returned images using MD5 hashes:
 
 * Edit the ImageScenarios.scala to include or exclude the MD5 response size check (this is commented out by default).
+
+The setup above describes how to run the performance tests on a set on well known input files. You can also run some of the tests against an arbitrary set of test files, such as a selection of images and ePub files from the real system. In this case, you have to disable the MD5 checks, and the ePub file tests, as these currently only work with well-known input data.
+
 
 ### Running Gatling tests ###
 
