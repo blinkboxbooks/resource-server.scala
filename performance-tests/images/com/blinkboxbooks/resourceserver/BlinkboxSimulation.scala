@@ -1,4 +1,4 @@
-package com.blinkboxbooks.resourceserve
+package com.blinkboxbooks.resourceserver
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
@@ -21,7 +21,7 @@ import io.gatling.http.config.HttpProxyBuilder.toProxy
  * https://github.com/excilys/gatling/wiki/Assertions
  *
  */
-class BlinkboxSimulation extends Simulation {
+abstract class BlinkboxSimulation extends Simulation {
 
   // we have to import this for the base URL which will be www
   import ScenarioUtils._
@@ -67,7 +67,7 @@ class BlinkboxSimulation extends Simulation {
   val httpConfProxy = httpConfNoProxy
     .proxy(Proxy("localhost", 8000).httpsPort(8001))
 
-    // Test plan ------------------------------------------------------
+  // Test plan ------------------------------------------------------
     
   val fullRampUpRate = rampUsersPerSec(0.1) to (usersPerSec) during (rampSeconds seconds)
   val fullConstantRate = constantUsersPerSec(usersPerSec).during(constantLoadSeconds seconds)

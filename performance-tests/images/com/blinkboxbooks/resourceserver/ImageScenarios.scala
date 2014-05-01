@@ -1,4 +1,4 @@
-package com.blinkboxbooks.resourceserve
+package com.blinkboxbooks.resourceserver
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
@@ -126,9 +126,9 @@ object ImageScenarios {
   val imageResizingScn = scenario("pseudo-random sequence of file images")
     .feed(paths)
     .feed(sizes)
+    // uncomment this if you are testing with the big-NNNN.png files to check the MD5 of the response...
+    //.exec(get_md5)
     .exec(group("processed images") {
-      // uncomment this if you are testing with the big-NNNN.png files to check the MD5 of the response...
-      //get_md5,
       resizeImageRequest
     })
 
