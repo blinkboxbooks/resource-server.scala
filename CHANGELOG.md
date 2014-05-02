@@ -1,5 +1,13 @@
 # Change log
 
+## 0.1.11 ([#19](https://git.mobcastdev.com/Platform/baldrick/pull/19) 2014-05-01 15:35:00)
+
+Added response header
+
+This patch adds a response header "X-bbb-from-intermediate-resource", as requested by @alexb. This will be set to "true" on image files, when these are produced from an intermediate (cached) image file as opposed to the full resolution file.
+
+The intention is to make stress tests easier to implement, as the returned images are subtly different depending on whether it came straight from the full-size original vs. the precomputed intermediate size files, hence MD5 hashes of the files are different.
+
 ## 0.1.10 ([#18](https://git.mobcastdev.com/Platform/baldrick/pull/18) 2014-05-01 13:48:52)
 
 patch change for copy and paste typo in load profile
