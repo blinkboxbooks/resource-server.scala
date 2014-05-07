@@ -1,5 +1,11 @@
 # Change log
 
+## 0.1.12 ([#20](https://git.mobcastdev.com/Platform/baldrick/pull/20) 2014-05-06 19:43:55)
+
+patch change to gatling script
+
+patch change to gatling script to allow for difference with live version message
+
 ## 0.1.11 ([#19](https://git.mobcastdev.com/Platform/baldrick/pull/19) 2014-05-01 15:35:00)
 
 Added response header
