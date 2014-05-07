@@ -110,7 +110,7 @@ object ImageScenarios {
       .get(prefix + "/params;img:w=1;img:m=scale;img:q=99;v=99/${path}.jpg")
       .headers(media_headers)
       .check(status.is(400))
-      .check(regex("Server version #99 is not yet specified."))
+      .check(regex("Server version (#)?99 is not yet specified(\\.)?"))
       .check(responseTimeInMillis.lessThan(maxStaticResponseTimeInMillis)))
 
   // gravity img:m=crop , img:g=nwsec|ne|we
