@@ -52,16 +52,19 @@ class ScalatraBootstrap extends LifeCycle with Logging {
 
     // Create a custom thread pool with a limited number of threads, a limited size queue, and
     // custom thread names.
+    // Default value to 0, which means that cache updating is disabled.
     val cacheingThreadCount =
       if (config.hasPath("cache.threads.count"))
         config.getInt("cache.threads.count")
-      else
-        (Runtime.getRuntime().availableProcessors() - 1).max(1)
+      else 0
     logger.info(s"Using $cacheingThreadCount threads for background resizing of images for cache")
-    
+
+    val cacheWritingEnabled = cacheingThreadCount > 0
+    logger.info(s"Caching of images is ${if (cacheWritingEnabled) "" else "not "}enabled")
+
     val maximumCacheQueueSize = config.getInt("cache.queue.limit")
     val threadFactory = new BasicThreadFactory.Builder().namingPattern("image-caching-%d").build()
-    val threadPool = new ThreadPoolExecutor(cacheingThreadCount, cacheingThreadCount, 0L, TimeUnit.MILLISECONDS,
+    val threadPool = new ThreadPoolExecutor(cacheingThreadCount, cacheingThreadCount.max(1), 0L, TimeUnit.MILLISECONDS,
       new LinkedBlockingQueue[Runnable](maximumCacheQueueSize), threadFactory, new ThreadPoolExecutor.AbortPolicy())
 
     val cacheQueueLogger = Logger(LoggerFactory getLogger ResourceServlet.getClass.getName)
@@ -72,7 +75,8 @@ class ScalatraBootstrap extends LifeCycle with Logging {
 
     // Create and mount the resource servlet.
     context.mount(ResourceServlet(fileResolver,
-      new FileSystemImageCache(cacheDirectory, cachedFileSizes, fileResolver), cacheingExecutionContext, numThreads,
+      new FileSystemImageCache(cacheDirectory, cachedFileSizes, fileResolver, cacheWritingEnabled),
+      cacheingExecutionContext, numThreads,
       infoThreshold, warnThreshold, errorThreshold), "/*")
   }
 

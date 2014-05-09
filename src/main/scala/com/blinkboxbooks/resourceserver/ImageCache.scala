@@ -51,19 +51,25 @@ trait ImageCache {
   def wouldCacheImage(size: Option[Int]): Boolean
 }
 
-class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver) extends ImageCache with Logging {
+class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver, writingEnabled: Boolean)
+  extends ImageCache with Logging {
 
   // Ordered list of the sizes at which images are cached.
   val targetSizes = sizes.toList.sorted
 
   override def addImage(path: String) {
+    if (!writingEnabled) {
+      logger.debug("Caching disabled, ignoring")
+      return
+    }
+    
     logger.debug(s"Caching image at $path")
     for (
       input <- managed(resolver.resolve(path).get);
       originalImage <- managed(ImageIO.read(input))
     ) {
       if (originalImage == null) throw new IOException(s"Unable to decode image at $path")
-      
+
       // Generate images at each of intermediate sizes that we keep.
       for (
         size <- targetSizes;

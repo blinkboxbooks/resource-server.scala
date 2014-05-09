@@ -45,7 +45,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     resolver = new EpubEnabledFileResolver(rootDir.toPath)
 
     val cacheDir = topLevel.resolve("file-cache")
-    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900), resolver)
+    imageCache = new FileSystemImageCache(cacheDir, Set(400, 900), resolver, writingEnabled = true)
 
     FileUtils.write(new File(parentDir, TopLevelFile), "Should not be accessible")
     FileUtils.write(new File(rootDir, KeyFile), "Don't serve this up")
