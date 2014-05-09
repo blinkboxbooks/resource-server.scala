@@ -1,5 +1,21 @@
 # Change log
 
+## 0.1.13 ([#21](https://git.mobcastdev.com/Platform/baldrick/pull/21) 2014-05-09 11:17:14)
+
+Added ability to disable pre-computing of smaller image sizes
+
+A patch for disabling caching:
+
+As discussed here: https://tools.mobcastdev.com/confluence/display/REL/Deployment+Concerns, we want to be able to roll out this version of the resource server, **without** the production of cached intermediate image sizes.
+
+This feature is enabled by setting the configuration property:
+
+cache.threads.count=0
+
+or by not setting it at all, i.e. this is the default value for it.
+
+Generation of smaller image sizes for faster serving of smaller files can still be enabled by setting this configuration property to greater than 0.
+
 ## 0.1.12 ([#20](https://git.mobcastdev.com/Platform/baldrick/pull/20) 2014-05-06 19:43:55)
 
 patch change to gatling script
