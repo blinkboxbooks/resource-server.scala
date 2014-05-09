@@ -24,8 +24,7 @@ default to the system tmp directory.
 that specify a specific format, resolution or quality). If not set, this will default to the number of CPUs reported by the JVM 
 on which the service runs.
 * cache.threads.count (OPTIONAL): This is the number of threads that will be used for handling background jobs for storing smaller versions
-of accessed images. If not set, this will default to the number of CPUs reported by the JVM 
-on which the service runs.
+of accessed images. If not set, this will default to 0. A value of 0 means that generation of cached images is disabled.
 * resource.server.path (REQUIRED): This is the base path of the servlet that handles resource requests. Should be left as "/"
 in normal cases.
 
