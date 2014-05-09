@@ -24,5 +24,6 @@ cache.directory=/path/to/image/directory/root
 cache.queue.limit=250000
 
 # Number of background threads used to pre-compute smaller versions of images.
-# If not set, the following will default to the number of CPUs.
-#cache.threads.count=2
+# If set to 0, cache updating is disabled, i.e. no intermediate size images will be written.
+# If not set, will default to 0.
+#cache.threads.count=0

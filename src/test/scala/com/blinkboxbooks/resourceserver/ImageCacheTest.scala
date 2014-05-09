@@ -52,7 +52,7 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     resolver = mock[FileResolver]
     doReturn(Success(new ByteArrayInputStream(largeFile.toByteArray))).when(resolver).resolve(filePath)
 
-    cache = new FileSystemImageCache(cacheDir, sizes, resolver)
+    cache = new FileSystemImageCache(cacheDir, sizes, resolver, writingEnabled = true)
   }
 
   after {
@@ -109,7 +109,7 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     fs = Jimfs.newFileSystem(Configuration.unix().toBuilder().setMaxSize(1000).build())
     cacheDir = fs.getPath("/cache")
     Files.createDirectories(cacheDir)
-    cache = new FileSystemImageCache(cacheDir, sizes, resolver)
+    cache = new FileSystemImageCache(cacheDir, sizes, resolver, writingEnabled = true)
 
     intercept[IOException] { addImage(filePath) }
 
@@ -128,6 +128,16 @@ class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeA
     doReturn(Failure(ex)).when(resolver).resolve("unknown.png")
     val returnedEx = intercept[IOException] { cache.addImage("unknown.png") }
     assert(ex eq returnedEx)
+  }
+
+  test("test with cache population disabled") {
+    cache = new FileSystemImageCache(cacheDir, sizes, resolver, writingEnabled = false)
+
+    // Try to add image.
+    addImage(filePath)
+
+    // Should ignore the request, hence shouldn't hit the file system at all.
+    verifyNoMoreInteractions(resolver)
   }
 
   private def checkIsCached(requestedWidth: Int, cachedWidth: Int) =
