@@ -132,3 +132,4 @@ alias grun='<gatling2 home>/bin/gatling.sh'
 Or,  do environment or PATH variable updates, whatever is easiest.
 
 When the tests have completed, Gatling will generate a report containing the results.
+
