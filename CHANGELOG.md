@@ -1,5 +1,12 @@
 # Change log
 
+## 1.0.0 ([#22](https://git.mobcastdev.com/Platform/baldrick/pull/22) 2014-05-12 16:07:57)
+
+Update major version to 1.0.0
+
+Major release/breaking change: bump version to 1.0.0 to avoid clashes with version in the Ruby resource server, which used version 0.n.n.
+
+
 ## 0.1.13 ([#21](https://git.mobcastdev.com/Platform/baldrick/pull/21) 2014-05-09 11:17:14)
 
 Added ability to disable pre-computing of smaller image sizes
