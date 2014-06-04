@@ -34,7 +34,7 @@ class ResourceServlet(resolver: FileResolver,
   import ResourceServlet._
   import Gravity._
 
-  private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z");
+  private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z")
   private val timeFormat = ISODateTimeFormat.time()
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
