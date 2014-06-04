@@ -19,14 +19,6 @@ object ResourceServerBuild extends Build {
       version := Version,
       scalaVersion := ScalaVersion,
       resolvers += Classpaths.typesafeReleases,
-      credentials += Credentials(Path.userHome / ".sbt" / ".nexus"),
-      publishTo := {
-        val nexus = "http://jenkins:m0bJenk@nexus.mobcast.co.uk/"
-        if (version.value.trim.endsWith("SNAPSHOT"))
-          Some("Sonatype Nexus Repository Manager" at nexus + "nexus/content/repositories/snapshots/")
-        else
-          Some("Sonatype Nexus Repository Manager" at nexus + "nexus/content/repositories/releases")
-      },
       mainClass in (Compile, packageBin) := Some("com.blinkboxbooks.resourceserver.JettyLauncher"),
       publishArtifact in (Compile, packageDoc) := false, // Don’t publish bits we don't care about.
       publishArtifact in (Compile, packageSrc) := false,
