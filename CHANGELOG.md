@@ -1,5 +1,11 @@
 # Change log
 
+## 1.0.1 ([#24](https://git.mobcastdev.com/Platform/baldrick/pull/24) 2014-06-05 11:55:38)
+
+Tiny tweak to force rebuild
+
+Patch: Tiny change to bump version number and force rebuild, should be the first build to go to Artifactory.
+
 ## 1.0.0 ([#22](https://git.mobcastdev.com/Platform/baldrick/pull/22) 2014-05-12 16:07:57)
 
 Update major version to 1.0.0
