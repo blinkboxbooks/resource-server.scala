@@ -6,9 +6,9 @@ import scala.concurrent.duration._
 /** Configuration for time logging, with default values. */
 trait TimeLoggingThresholds {
 
-  def infoThreshold: Duration = 0 millis
-  def warnThreshold: Duration = 250 millis
-  def errorThreshold: Duration = 500 millis
+  def infoThreshold: Duration = 0.millis
+  def warnThreshold: Duration = 250.millis
+  def errorThreshold: Duration = 500.millis
 
 }
 

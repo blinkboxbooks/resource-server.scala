@@ -7,18 +7,16 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
 import org.scalatest.BeforeAndAfter
-import org.scalatest.FunSuite
+import org.scalatest.FunSuiteLike
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
 import org.scalatra.test.scalatest.ScalatraSuite
 import org.scalatra.util.RicherString._
-import scala.concurrent.ExecutionContext
-import java.util.concurrent.Executor
 import TestUtils._
 
 @RunWith(classOf[JUnitRunner])
 class ResourceServletFunctionalTest extends ScalatraSuite
-  with FunSuite with BeforeAndAfter with MockitoSugar with ImageChecks {
+  with FunSuiteLike with BeforeAndAfter with MockitoSugar with ImageChecks {
 
   val KeyFile = "secret.key"
   val TopLevelFile = "toplevel.html"

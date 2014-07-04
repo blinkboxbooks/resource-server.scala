@@ -10,10 +10,6 @@ import org.mockito.Mockito._
 import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.ArgumentCaptor
-import java.nio.file.FileSystems
-import java.nio.file.FileSystem
-import java.nio.file.Path
-import java.nio.file.spi.FileSystemProvider
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.ByteArrayInputStream
@@ -31,9 +27,7 @@ import java.util.concurrent.RejectedExecutionException
  */
 @RunWith(classOf[JUnitRunner])
 class ResourceServletUnitTest extends ScalatraSuite
-  with FunSuite with BeforeAndAfter with MockitoSugar {
-
-  import ResourceServlet._
+  with FunSuiteLike with BeforeAndAfter with MockitoSugar {
 
   var imageProcessor: ImageProcessor = _
   var fileResolver: FileResolver = _
