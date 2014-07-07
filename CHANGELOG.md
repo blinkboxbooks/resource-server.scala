@@ -1,5 +1,18 @@
 # Change log
 
+## 1.1.0 ([#25](https://git.mobcastdev.com/Platform/baldrick/pull/25) 2014-07-04 18:12:20)
+
+Change quality setting and build as RPM
+
+### New features
+
+- Can now build as an RPM.
+- Uses the standard configuration library to load configuration (using `application.conf` as the example properties file is required for the RPM build).
+
+### Improvements
+
+- Uses the `AUTOMATIC` quality level rather than `BALANCED` to produce higher quality images at smaller sizes.
+
 ## 1.0.1 ([#24](https://git.mobcastdev.com/Platform/baldrick/pull/24) 2014-06-05 11:55:38)
 
 Tiny tweak to force rebuild
