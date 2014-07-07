@@ -14,7 +14,6 @@ import org.imgscalr.Scalr
 import org.imgscalr.Scalr.Method
 import org.imgscalr.Scalr.Mode
 import org.imgscalr.Scalr.Mode._
-import org.imgscalr.Scalr.resize
 
 import com.typesafe.scalalogging.slf4j.Logging
 
@@ -65,7 +64,7 @@ trait ImageProcessor {
   /**
    * Resize a given image.
    *
-   *  @param filetype           A string such as "jpg" or "png" that describes the type of file format to write the resize image to.
+   *  @param fileType           A string such as "jpg" or "png" that describes the type of file format to write the resize image to.
    *                            See @see javax.imageio.spi.ImageWriterSpi#getFormatNames for valid format strings.
    *  @param input              An input stream with the binary data of the image. Will not be closed by this method.
    *  @param output             An output stream that the converted image will be written to. Will not be closed by this method.
@@ -92,7 +91,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   // hence guarding against running out of memory under heavy load.
   private val threadFactory = new BasicThreadFactory.Builder().namingPattern("image-resizing-%d").build()
   implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadCount, threadFactory))
-  implicit val timeout = 10 seconds
+  implicit val timeout = 10.seconds
 
   // Disables disk caching for image files, makes reading image files faster.
   ImageIO.setUseCache(false)
@@ -114,8 +113,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
             case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, FIT_EXACT, width, height)
             case ImageSettings(Some(width), Some(height), Some(Crop), _, gravity) =>
               // First resize to an image that retains the smallest dimension requested, the crop of the excess.
-              val originalRatio = (originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth)
-              val requestedRatio = (height.asInstanceOf[Float] / width)
+              val originalRatio = originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth
+              val requestedRatio = height.asInstanceOf[Float] / width
               val resizeMode = if (requestedRatio < originalRatio) FIT_TO_WIDTH else FIT_TO_HEIGHT
               val resized = resize(originalImage, resizeMode, width, height)
               crop(resized, width, height, gravity getOrElse Center)
@@ -136,8 +135,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         if (!writers.hasNext) throw new Exception(s"Unknown file type '$outputFileType'")
         val writer = writers.next
 
-        val imageParams = writer.getDefaultWriteParam()
-        if (imageParams.canWriteCompressed()) {
+        val imageParams = writer.getDefaultWriteParam
+        if (imageParams.canWriteCompressed) {
           imageParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
           imageParams.setCompressionType(imageParams.getCompressionTypes()(0))
           imageParams.setCompressionQuality(settings.quality getOrElse DefaultQuality)
@@ -153,12 +152,12 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
 
   private def resize(src: BufferedImage, mode: Mode, targetSize: Int) =
     Await.result(Future {
-      time("resize", Debug) { Scalr.resize(src, Method.BALANCED, mode, targetSize, Scalr.OP_ANTIALIAS) }
+      time("resize", Debug) { Scalr.resize(src, Method.AUTOMATIC, mode, targetSize, Scalr.OP_ANTIALIAS) }
     }, timeout)
 
   private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int) =
     Await.result(Future {
-      time("resize", Debug) { Scalr.resize(src, Method.BALANCED, mode, width, height, Scalr.OP_ANTIALIAS) }
+      time("resize", Debug) { Scalr.resize(src, Method.AUTOMATIC, mode, width, height, Scalr.OP_ANTIALIAS) }
     }, timeout)
 
   private def crop(src: BufferedImage, targetWidth: Int, targetHeight: Int, gravity: Gravity) = {

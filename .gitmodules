@@ -1,0 +1,3 @@
+[submodule "rpm"]
+	path = rpm
+	url = git@git.mobcastdev.com:ITOPS/specs.fatjar.git
