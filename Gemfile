@@ -1,5 +1,5 @@
-source "https://rubygems.org"
-source "http://gems.mobcastdev.com"
+source "http://artifactory.blinkbox.local/artifactory/api/gems/bbb-gems/" 
+source "http://artifactory.blinkbox.local/artifactory/api/gems/rubygems/"
 ruby "2.0.0"
 
 group :test do
@@ -13,5 +13,5 @@ group :test do
   gem "httpclient"
   gem "cucumber-rest"
   gem "cucumber-helpers"
-  gem "cucumber-blinkbox", "~>0.2.1"
+  gem "cucumber-blinkbox", "~>0.2.3"
 end
