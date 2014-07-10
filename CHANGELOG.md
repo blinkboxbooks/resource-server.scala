@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.1 ([#26](https://git.mobcastdev.com/Platform/baldrick/pull/26) 2014-07-10 10:28:47)
+
+Updating gemfile to reflect changes in rubygem servers
+
+A patch to include the sources for the new rubygems server and an update to cucumber-blinkbox
+
 ## 1.1.0 ([#25](https://git.mobcastdev.com/Platform/baldrick/pull/25) 2014-07-04 18:12:20)
 
 Change quality setting and build as RPM
