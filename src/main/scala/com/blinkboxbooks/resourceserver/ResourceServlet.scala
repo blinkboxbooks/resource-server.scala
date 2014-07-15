@@ -1,27 +1,27 @@
 package com.blinkboxbooks.resourceserver
 
-import java.io.File
+import com.typesafe.scalalogging.slf4j.Logging
 import java.io.InputStream
-import java.io.FileInputStream
 import java.nio.file._
+import java.util.concurrent.RejectedExecutionException
+import java.util.Locale
 import javax.servlet.http.HttpServletRequest
 import javax.activation.MimetypesFileTypeMap
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import org.scalatra.UriDecoder
-import org.scalatra.ScalatraServlet
-import org.scalatra.util.io.copy
+import org.apache.commons.codec.digest.DigestUtils
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.ISODateTimeFormat
-import org.apache.commons.codec.digest.DigestUtils
-import com.typesafe.scalalogging.slf4j.Logging
+import org.scalatra.ScalatraServlet
+import org.scalatra.UriDecoder
+import org.scalatra.util.io.copy
 import resource._
 import MatrixParameters._
 import Utils._
-import java.util.concurrent.RejectedExecutionException
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -34,7 +34,9 @@ class ResourceServlet(resolver: FileResolver,
   import ResourceServlet._
   import Gravity._
 
-  private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss Z")
+  private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss 'GMT'")
+    .withLocale(Locale.US)
+    .withZone(DateTimeZone.UTC)
   private val timeFormat = ISODateTimeFormat.time()
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
@@ -49,7 +51,7 @@ class ResourceServlet(resolver: FileResolver,
     response.headers += ("now" -> timeFormat.print(now))
     response.headers += ("Date" -> dateTimeFormat.print(now))
     response.headers += ("Expires" -> dateTimeFormat.print(now plus expiryTime))
-    response.headers += ("X-Application-Version" -> "0.0.1")
+    response.headers += ("X-Application-Version" -> "1.1.2")
     response.headers += ("Access-Control-Allow-Origin" -> "*")
   }
 

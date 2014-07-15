@@ -16,3 +16,6 @@ project/plugins/project/
 *.sc
 /bin
 .idea/
+.cache
+.classpath
+.project
