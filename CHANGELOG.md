@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.2 ([#29](https://git.mobcastdev.com/Platform/baldrick/pull/29) 2014-07-15 11:04:45)
+
+Added GPG key for signed RPMs
+
+### Improvement
+
+- Added the GPG folder to the repo so the RPM generated will be signed.
+
 ## 1.1.1 ([#26](https://git.mobcastdev.com/Platform/baldrick/pull/26) 2014-07-10 10:28:47)
 
 Updating gemfile to reflect changes in rubygem servers
