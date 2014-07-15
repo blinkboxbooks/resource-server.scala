@@ -1,5 +1,12 @@
 # Change log
 
+## 1.1.3 ([#28](https://git.mobcastdev.com/Platform/baldrick/pull/28) 2014-07-14 17:37:23)
+
+Fix date-time format
+
+Bug fix to use correct date-time format in headers, see CP-1597.
+
+
 ## 1.1.2 ([#29](https://git.mobcastdev.com/Platform/baldrick/pull/29) 2014-07-15 11:04:45)
 
 Added GPG key for signed RPMs
