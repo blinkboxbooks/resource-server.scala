@@ -34,6 +34,7 @@ object ResourceServerBuild extends Build {
         "log4j"        % "log4j" % "1.2.17",
         "commons-codec" % "commons-codec" % "1.9",
         "joda-time"     % "joda-time" % "2.3",
+        "com.mortennobel" % "java-image-scaling" % "0.8.5",
         "junit"         % "junit" % "4.11" % "test",
         "org.scalatest" %% "scalatest" % "2.2.0" % "test",
         "org.imgscalr"  % "imgscalr-lib" % "4.2",
@@ -42,5 +43,8 @@ object ResourceServerBuild extends Build {
         "commons-io" % "commons-io" % "2.4",
         "com.google.jimfs" % "jimfs" % "1.0-rc1" % "test",
         "com.jsuereth" % "scala-arm_2.10" % "1.3",
-        "com.blinkbox.books" %% "common-config" % "0.7.0")))
+        "com.blinkbox.books" %% "common-config" % "0.7.0"
+      )
+    )
+  )
 }

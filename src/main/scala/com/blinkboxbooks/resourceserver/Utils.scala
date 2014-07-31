@@ -46,7 +46,7 @@ object Utils {
         imageSettings.gravity.foreach(g => params += ("img:g" -> g.toString))
       case Some(Stretch) => params += ("img:m" -> "stretch")
       case Some(Scale) => params += ("img:m" -> "scale")
-      case None =>
+      case _ =>
     }
 
     val sortedParams = params.toList.sortBy(_._1)
