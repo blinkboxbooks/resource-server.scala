@@ -1,8 +1,10 @@
 package com.blinkboxbooks.resourceserver
 
-import java.awt.image.BufferedImage
+import java.awt.image._
 import java.io._
 import java.util.concurrent.Executors
+
+import com.mortennobel.imagescaling.{ResampleFilters, ResampleOp}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
@@ -11,7 +13,6 @@ import scala.concurrent.duration._
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import org.imgscalr.Scalr
-import org.imgscalr.Scalr.Method
 import org.imgscalr.Scalr.Mode
 import org.imgscalr.Scalr.Mode._
 
@@ -118,7 +119,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
               val resizeMode = if (requestedRatio < originalRatio) FIT_TO_WIDTH else FIT_TO_HEIGHT
               val resized = resize(originalImage, resizeMode, width, height)
               crop(resized, width, height, gravity getOrElse Center)
-            case ImageSettings(Some(width), Some(height), _, _, _) => resize(originalImage, AUTOMATIC, width, height)
+            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, AUTOMATIC, width, height)
             case _ => originalImage
           }
         }
@@ -150,14 +151,34 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     }
   }
 
-  private def resize(src: BufferedImage, mode: Mode, targetSize: Int) =
+  private def resize(src: BufferedImage, mode: Mode, targetSize: Int):BufferedImage =
     Await.result(Future {
-      time("resize", Debug) { Scalr.resize(src, Method.AUTOMATIC, mode, targetSize, Scalr.OP_ANTIALIAS) }
+      time("resize", Debug) {
+        val r  = mode match {
+          case FIT_TO_WIDTH | FIT_EXACT | AUTOMATIC =>
+            val h = Math.round((targetSize / src.getWidth.toFloat) * src.getHeight)
+            new ResampleOp(targetSize, h)
+          case FIT_TO_HEIGHT =>
+            val w = Math.round((targetSize / src.getHeight.toFloat) * src.getWidth)
+            new ResampleOp(w, targetSize)
+        }
+        r.setFilter(ResampleFilters.getLanczos3Filter)
+        r.filter(src, null)
+      }
     }, timeout)
 
-  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int) =
+  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int):BufferedImage =
     Await.result(Future {
-      time("resize", Debug) { Scalr.resize(src, Method.AUTOMATIC, mode, width, height, Scalr.OP_ANTIALIAS) }
+      time("resize", Debug) {
+        val r = mode match {
+          case AUTOMATIC =>
+            new ResampleOp(width, Math.round((width.toFloat / src.getWidth.toFloat) * src.getHeight))
+          case _ =>
+            new ResampleOp(width, height)
+        }
+        r.setFilter(ResampleFilters.getLanczos3Filter)
+        r.filter(src, null)
+      }
     }, timeout)
 
   private def crop(src: BufferedImage, targetWidth: Int, targetHeight: Int, gravity: Gravity) = {
@@ -191,3 +212,5 @@ object ThreadPoolImageProcessor {
     (x, y)
   }
 }
+
+
