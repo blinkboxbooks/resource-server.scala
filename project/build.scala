@@ -44,4 +44,7 @@ object ResourceServerBuild extends Build {
         "com.google.jimfs" % "jimfs" % "1.0-rc1" % "test",
         "com.jsuereth" % "scala-arm_2.10" % "1.3",
         "com.blinkbox.books" %% "common-config" % "0.7.0"
+      )
+    )
+  )
 }
