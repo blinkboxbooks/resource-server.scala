@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.4 ([#30](https://git.mobcastdev.com/Platform/baldrick/pull/30) 2014-07-31 09:34:36)
+
+CP-1604: Poor Quality Images
+
+patch
+- Use Lanczos resize from https://code.google.com/p/java-image-scaling/
+- Takes between 150-200ms on local mbpro after a brief warmup. 
+
 ## 1.1.3 ([#28](https://git.mobcastdev.com/Platform/baldrick/pull/28) 2014-07-14 17:37:23)
 
 Fix date-time format
