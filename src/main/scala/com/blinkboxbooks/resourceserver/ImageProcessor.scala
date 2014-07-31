@@ -13,8 +13,6 @@ import scala.concurrent.duration._
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import org.imgscalr.Scalr
-import org.imgscalr.Scalr.Mode
-import org.imgscalr.Scalr.Mode._
 
 import com.typesafe.scalalogging.slf4j.Logging
 
@@ -28,6 +26,8 @@ sealed abstract class ResizeMode
 case object Scale extends ResizeMode
 case object Crop extends ResizeMode
 case object Stretch extends ResizeMode
+case object FitHeight extends ResizeMode
+case object FitWidth extends ResizeMode
 
 /** Enumeration for gravity setting, that controls what part of an image is cropped. */
 object Gravity extends Enumeration {
@@ -109,17 +109,17 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       for (
         image <- managed {
           settings match {
-            case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FIT_TO_WIDTH, width)
-            case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FIT_TO_HEIGHT, height)
-            case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, FIT_EXACT, width, height)
+            case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FitWidth, width)
+            case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FitHeight, height)
+            case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, Crop, width, height)
             case ImageSettings(Some(width), Some(height), Some(Crop), _, gravity) =>
               // First resize to an image that retains the smallest dimension requested, the crop of the excess.
               val originalRatio = originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth
               val requestedRatio = height.asInstanceOf[Float] / width
-              val resizeMode = if (requestedRatio < originalRatio) FIT_TO_WIDTH else FIT_TO_HEIGHT
+              val resizeMode = if (requestedRatio < originalRatio) FitWidth else FitHeight
               val resized = resize(originalImage, resizeMode, width, height)
               crop(resized, width, height, gravity getOrElse Center)
-            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, AUTOMATIC, width, height)
+            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, Scale, width, height)
             case _ => originalImage
           }
         }
@@ -151,11 +151,11 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     }
   }
 
-  private def resize(src: BufferedImage, mode: Mode, targetSize: Int): BufferedImage =
+  private def resize(src: BufferedImage, mode: ResizeMode, targetSize: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
         val r  = mode match {
-          case FIT_TO_HEIGHT =>
+          case FitHeight =>
             val w = Math.round((targetSize / src.getHeight.toFloat) * src.getWidth)
             new ResampleOp(w, targetSize)
           case _ =>
@@ -167,11 +167,11 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       }
     }, timeout)
 
-  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int): BufferedImage =
+  private def resize(src: BufferedImage, mode: ResizeMode, width: Int, height: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
         val r = mode match {
-          case AUTOMATIC =>
+          case Scale =>
             new ResampleOp(width, Math.round((width.toFloat / src.getWidth.toFloat) * src.getHeight))
           case _ =>
             new ResampleOp(width, height)
