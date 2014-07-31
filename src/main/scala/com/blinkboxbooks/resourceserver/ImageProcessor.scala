@@ -151,7 +151,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     }
   }
 
-  private def resize(src: BufferedImage, mode: Mode, targetSize: Int):BufferedImage =
+  private def resize(src: BufferedImage, mode: Mode, targetSize: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
         val r  = mode match {
@@ -167,7 +167,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       }
     }, timeout)
 
-  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int):BufferedImage =
+  private def resize(src: BufferedImage, mode: Mode, width: Int, height: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
         val r = mode match {
