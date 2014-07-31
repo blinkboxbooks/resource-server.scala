@@ -34,7 +34,7 @@ object ResourceServerBuild extends Build {
         "log4j"        % "log4j" % "1.2.17",
         "commons-codec" % "commons-codec" % "1.9",
         "joda-time"     % "joda-time" % "2.3",
-        "com.mortennobel" % "java-image-scaling" % "0.8.4",
+        "com.mortennobel" % "java-image-scaling" % "0.8.5",
         "junit"         % "junit" % "4.11" % "test",
         "org.scalatest" %% "scalatest" % "2.2.0" % "test",
         "org.imgscalr"  % "imgscalr-lib" % "4.2",
