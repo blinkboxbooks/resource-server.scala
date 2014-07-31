@@ -156,10 +156,10 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       time("resize", Debug) {
         val r  = mode match {
           case FitHeight =>
-            val w = Math.round((targetSize / src.getHeight.toFloat) * src.getWidth)
+            val w = Math.round((targetSize * src.getWidth) / src.getHeight.toFloat)
             new ResampleOp(w, targetSize)
           case _ =>
-            val h = Math.round((targetSize / src.getWidth.toFloat) * src.getHeight)
+            val h = Math.round((targetSize * src.getHeight) / src.getWidth.toFloat)
             new ResampleOp(targetSize, h)
         }
         r.setFilter(ResampleFilters.getLanczos3Filter)
