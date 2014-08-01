@@ -119,7 +119,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
               val resizeMode = if (requestedRatio < originalRatio) FitWidth else FitHeight
               val resized = resize(originalImage, resizeMode, width, height)
               crop(resized, width, height, gravity getOrElse Center)
-            case ImageSettings(Some(width), Some(height), Some(Scale), _, _) => resize(originalImage, Scale, width, height)
+            case ImageSettings(Some(width), Some(height), _, _, _) => resize(originalImage, Scale, width, height)
             case _ => originalImage
           }
         }
@@ -173,6 +173,12 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         val r = mode match {
           case Scale =>
             new ResampleOp(width, Math.round((width.toFloat / src.getWidth.toFloat) * src.getHeight))
+          case FitHeight =>
+            val w = Math.round((width * src.getWidth) / src.getHeight.toFloat)
+            new ResampleOp(w, height)
+          case FitWidth =>
+            val h = Math.round((height * src.getHeight) / src.getWidth.toFloat)
+            new ResampleOp(width, h)
           case _ =>
             new ResampleOp(width, height)
         }
@@ -196,7 +202,8 @@ object ThreadPoolImageProcessor {
    * Calculate the part of an image to crop using a gravity parameter,
    * in a similar fashion to ImageMagick (see http://www.imagemagick.org/Usage/crop/#crop_gravity).
    */
-  def cropPosition(originalWidth: Int, originalHeight: Int, targetWidth: Int, targetHeight: Int, gravity: Gravity) = {
+  def cropPosition(originalWidth: Int, originalHeight: Int,
+                   targetWidth: Int, targetHeight: Int, gravity: Gravity): (Int, Int) = {
     assert(targetWidth > 0 && targetHeight > 0)
     assert(originalWidth >= targetWidth && originalHeight >= targetHeight)
     val x = gravity match {
