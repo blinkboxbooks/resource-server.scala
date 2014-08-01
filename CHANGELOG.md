@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.5 ([#31](https://git.mobcastdev.com/Platform/baldrick/pull/31) 2014-08-01 10:52:12)
+
+CP-1604: I introduced a couple of regressions, this fixes
+
+patch
+
+I introduced two regressions, that were caught by the cucumber tests, which I neglected to run... they all pass now!
+
 ## 1.1.4 ([#30](https://git.mobcastdev.com/Platform/baldrick/pull/30) 2014-07-31 09:34:36)
 
 CP-1604: Poor Quality Images
