@@ -70,12 +70,11 @@ class ResourceServlet(resolver: FileResolver,
       val captures = multiParams("captures")
       val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
 
-      val requestIsForImage = fileExtension(captures(1)) match {
+      val filename = captures(1)
+      val requestIsForImage = fileExtension(filename) match {
         case (Some(ext), _) if ACCEPTED_IMAGE_FORMATS.contains(ext) => true
         case _ => false
       }
-
-      val filename = captures(1)
 
       if (requestIsForImage) {
         // Check that version is well known, otherwise return an error.
