@@ -117,6 +117,16 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Download non-image file inside epub file, with image params") {
+    get("/params;img:w=100;v=0/test.epub/content/intro.html") {
+      assert(status === 200)
+      assert(body.contains("Welcome"))
+      assert(header("Content-Length") === "28")
+      assert(header("Content-Type") === "text/html")
+      checkIsCacheable()
+    }
+  }
+
   test("Download image inside epub file") {
     get("/params;v=0/test.epub/images/test.jpeg") {
       assert(status === 200)

@@ -20,6 +20,8 @@ When(/^I request (?:the|an?) (.+) from within that sample ePub(?:, (.+))?$/) do 
   when "scaled down"
     params['img:w'] = 100
     subject(:resize_attributes, {'Width' => params['img:w']})
+  when "with image parameters"
+    params['img:w'] = 100
   else
     raise RuntimeError, "I don't know how to deal with the additional requirement: #{additional_requirements}"
   end

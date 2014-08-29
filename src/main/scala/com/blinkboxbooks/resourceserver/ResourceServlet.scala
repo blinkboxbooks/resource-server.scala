@@ -64,43 +64,56 @@ class ResourceServlet(resolver: FileResolver,
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params;([^/]*)/(.*)""".r) {
+    import Utils._
+
     time("request") {
       val captures = multiParams("captures")
       val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
 
-      // Check that version is well known, otherwise return an error.
-      imageParams.get("v") match {
-        case Some("0") => // OK.
-        case Some(v) if Try(v.toInt).isFailure => halt(400, s"Server version should be specified as an integer value")
-        case Some(v) => halt(400, s"Server version $v is not yet specified")
-        case None => halt(400, "No version specified")
+      val requestIsForImage = fileExtension(captures(1)) match {
+        case (Some(ext), _) if ACCEPTED_IMAGE_FORMATS.contains(ext) => true
+        case _ => false
       }
 
-      val width = intParam(imageParams, "img:w")
-      if (width.isDefined && (width.get <= 0 || width.get > MAX_DIMENSION))
-        halt(400, s"Width must be between 1 and $MAX_DIMENSION, got ${width.get}")
-
-      val height = intParam(imageParams, "img:h")
-      if (height.isDefined && (height.get <= 0 || height.get > MAX_DIMENSION))
-        halt(400, s"Height must be between 1 and $MAX_DIMENSION, got ${height.get}")
-
-      val quality = intParam(imageParams, "img:q").map(_.toInt / 100.0f)
-      if (quality.isDefined && (quality.get <= 0.0 || quality.get > 1.0))
-        halt(400, "Quality parameter must be between 0 and 100")
-
-      val mode = imageParams.get("img:m") map {
-        case "scale" | "scale!" => Scale
-        case "crop" => Crop
-        case "stretch" => Stretch
-        case m @ _ => invalidParameter("img:m", m)
-      }
-
-      val gravity = gravityParam(imageParams, "img:g")
-
-      val imageSettings = new ImageSettings(width, height, mode, quality, gravity)
       val filename = captures(1)
-      logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
-      handleFileRequest(filename, imageSettings)
+
+      if (requestIsForImage) {
+        // Check that version is well known, otherwise return an error.
+        imageParams.get("v") match {
+          case Some("0") => // OK.
+          case Some(v) if Try(v.toInt).isFailure => halt(400, s"Server version should be specified as an integer value")
+          case Some(v) => halt(400, s"Server version $v is not yet specified")
+          case None => halt(400, "No version specified")
+        }
+
+        val width = intParam(imageParams, "img:w")
+        if (width.isDefined && (width.get <= 0 || width.get > MAX_DIMENSION))
+          halt(400, s"Width must be between 1 and $MAX_DIMENSION, got ${width.get}")
+
+        val height = intParam(imageParams, "img:h")
+        if (height.isDefined && (height.get <= 0 || height.get > MAX_DIMENSION))
+          halt(400, s"Height must be between 1 and $MAX_DIMENSION, got ${height.get}")
+
+        val quality = intParam(imageParams, "img:q").map(_.toInt / 100.0f)
+        if (quality.isDefined && (quality.get <= 0.0 || quality.get > 1.0))
+          halt(400, "Quality parameter must be between 0 and 100")
+
+        val mode = imageParams.get("img:m") map {
+          case "scale" | "scale!" => Scale
+          case "crop" => Crop
+          case "stretch" => Stretch
+          case m @ _ => invalidParameter("img:m", m)
+        }
+
+        val gravity = gravityParam(imageParams, "img:g")
+
+        val imageSettings = new ImageSettings(width, height, mode, quality, gravity)
+        logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
+        handleFileRequest(filename, imageSettings)
+      } else {
+        handleFileRequest(filename)
+      }
+      
     }
   }
 

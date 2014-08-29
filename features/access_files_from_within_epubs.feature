@@ -27,6 +27,12 @@ Feature: Access files from within ePubs
     Then the response is that image, at the requested size
     And it has the correct content type
 
+  Scenario: I can access an ePub's container XML directly, when image parameters are specified
+    Given a valid sample ePub exists on the resource server
+    When I request the container xml from within that sample ePub, with image parameters
+    Then the response is that container xml
+    And it has the correct content type
+
   Scenario Outline: Correct content types
     Given a valid sample ePub with a range of files exists on the resource server
     When I request a <file type> file from within that sample ePub
