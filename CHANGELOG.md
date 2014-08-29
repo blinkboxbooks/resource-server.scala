@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.6 ([#33](https://git.mobcastdev.com/Platform/baldrick/pull/33) 2014-08-29 11:04:26)
+
+Serve non-images requested with image params
+
+### Bug fix
+
+- [CP-1784](http://jira.blinkbox.local/jira/browse/CP-1784): Allow non-images to be requested with image parameters.
+
 ## 1.1.5 ([#31](https://git.mobcastdev.com/Platform/baldrick/pull/31) 2014-08-01 10:52:12)
 
 CP-1604: I introduced a couple of regressions, this fixes
