@@ -147,6 +147,15 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  // CP-1701
+  test("ETag header value is surrounded by quote marks"){
+    get("/params;v=0/test.epub/images/test.jpeg") {
+      assert(status === 200)
+      val etag = header("ETag")
+      assert(etag.toString.matches("\"(.+)\""))
+    }
+  }
+
   test("Download image with image settings") {
     for (fileType <- FileTypes) {
       get(s"/params;img:w=160;v=0/test.epub/images/test.$fileType") {
