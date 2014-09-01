@@ -1,27 +1,24 @@
 package com.blinkboxbooks.resourceserver
 
-import com.typesafe.scalalogging.slf4j.Logging
 import java.io.InputStream
 import java.nio.file._
-import java.util.concurrent.RejectedExecutionException
 import java.util.Locale
-import javax.servlet.http.HttpServletRequest
+import java.util.concurrent.RejectedExecutionException
 import javax.activation.MimetypesFileTypeMap
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import org.apache.commons.codec.digest.DigestUtils
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.ISODateTimeFormat
+import javax.servlet.http.HttpServletRequest
+
+import com.blinkboxbooks.resourceserver.MatrixParameters._
+import com.blinkboxbooks.resourceserver.Utils._
+import com.typesafe.scalalogging.slf4j.Logging
+import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.scalatra.ScalatraServlet
-import org.scalatra.UriDecoder
 import org.scalatra.util.io.copy
 import resource._
-import MatrixParameters._
-import Utils._
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).
@@ -31,8 +28,8 @@ class ResourceServlet(resolver: FileResolver,
   imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
   extends ScalatraServlet with Logging with TimeLogging {
 
-  import ResourceServlet._
-  import Gravity._
+  import com.blinkboxbooks.resourceserver.Gravity._
+  import com.blinkboxbooks.resourceserver.ResourceServlet._
 
   private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss 'GMT'")
     .withLocale(Locale.US)
@@ -136,7 +133,8 @@ class ResourceServlet(resolver: FileResolver,
     for (inputStream <- managed(cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename))))) {
       contentType = mimeTypes.getContentType("file." + targetFileType)
       characterEncodingForFiletype.get(targetFileType.toLowerCase).foreach(response.setCharacterEncoding(_))
-      response.headers += ("ETag" -> stringHash(request.getRequestURI))
+      val etag = "\"" + stringHash(request.getRequestURI) + "\""
+      response.headers += ("ETag" -> etag)
 
       // Truncate results if requested.
       val boundedInput = boundedInputStream(inputStream, byteRange)
