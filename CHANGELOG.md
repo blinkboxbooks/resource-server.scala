@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.7 ([#34](https://git.mobcastdev.com/Platform/baldrick/pull/34) 2014-09-01 15:13:54)
+
+CP-1701: Etag header value should have quote marks
+
+PATCH 
+
+Bug Fixed: 
+- CP-1701 ETag header should be surrounded by quotes
+
 ## 1.1.6 ([#33](https://git.mobcastdev.com/Platform/baldrick/pull/33) 2014-08-29 11:04:26)
 
 Serve non-images requested with image params
