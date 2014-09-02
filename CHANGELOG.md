@@ -1,5 +1,13 @@
 # Change log
 
+## 1.1.8 ([#35](https://git.mobcastdev.com/Platform/baldrick/pull/35) 2014-09-02 11:32:05)
+
+CP-1789: scale! vs scale
+
+PATCH: 
+
+- CP-1789: do not upscale with "scale" mode, only with "scale!" mode. 
+
 ## 1.1.7 ([#34](https://git.mobcastdev.com/Platform/baldrick/pull/34) 2014-09-01 15:13:54)
 
 CP-1701: Etag header value should have quote marks
