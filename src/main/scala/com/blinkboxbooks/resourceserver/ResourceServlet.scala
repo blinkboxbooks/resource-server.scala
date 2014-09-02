@@ -10,14 +10,14 @@ import javax.servlet.http.HttpServletRequest
 import com.blinkboxbooks.resourceserver.MatrixParameters._
 import com.blinkboxbooks.resourceserver.Utils._
 import com.typesafe.scalalogging.slf4j.Logging
-import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
 import resource._
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -31,6 +31,8 @@ class ResourceServlet(resolver: FileResolver,
   import com.blinkboxbooks.resourceserver.Gravity._
   import com.blinkboxbooks.resourceserver.ResourceServlet._
 
+import scala.io.Source
+
   private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss 'GMT'")
     .withLocale(Locale.US)
     .withZone(DateTimeZone.UTC)
@@ -38,6 +40,7 @@ class ResourceServlet(resolver: FileResolver,
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
   private val unchanged = new ImageSettings()
+  private val ApplicationVersion = Source.fromFile("VERSION").bufferedReader().readLine.trim
 
   before() {
     response.characterEncoding = None
@@ -48,7 +51,7 @@ class ResourceServlet(resolver: FileResolver,
     response.headers += ("now" -> timeFormat.print(now))
     response.headers += ("Date" -> dateTimeFormat.print(now))
     response.headers += ("Expires" -> dateTimeFormat.print(now plus expiryTime))
-    response.headers += ("X-Application-Version" -> "1.1.2")
+    response.headers += ("X-Application-Version" -> ApplicationVersion)
     response.headers += ("Access-Control-Allow-Origin" -> "*")
   }
 
@@ -61,7 +64,7 @@ class ResourceServlet(resolver: FileResolver,
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params;([^/]*)/(.*)""".r) {
-    import Utils._
+    import com.blinkboxbooks.resourceserver.Utils._
     time("request") {
       val captures = multiParams("captures")
       val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
