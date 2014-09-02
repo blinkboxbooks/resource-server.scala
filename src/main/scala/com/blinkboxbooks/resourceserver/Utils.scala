@@ -45,7 +45,8 @@ object Utils {
         params += ("img:m" -> "crop")
         imageSettings.gravity.foreach(g => params += ("img:g" -> g.toString))
       case Some(Stretch) => params += ("img:m" -> "stretch")
-      case Some(Scale) => params += ("img:m" -> "scale")
+      case Some(ScaleWithoutUpscale) => params += ("img:m" -> "scale")
+      case Some(ScaleWithUpscale) => params += ("img:m" -> "scale!")
       case _ =>
     }
 

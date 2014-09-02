@@ -23,7 +23,8 @@ import resource._
 
 /** Types for each of the possible ways to resize an image. */
 sealed abstract class ResizeMode
-case object Scale extends ResizeMode
+case object ScaleWithoutUpscale extends ResizeMode // "scale"
+case object ScaleWithUpscale extends ResizeMode // "scale!"
 case object Crop extends ResizeMode
 case object Stretch extends ResizeMode
 case object FitHeight extends ResizeMode
@@ -109,17 +110,16 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       for (
         image <- managed {
           settings match {
-            case ImageSettings(Some(width), None, _, _, _) => resize(originalImage, FitWidth, width)
-            case ImageSettings(None, Some(height), _, _, _) => resize(originalImage, FitHeight, height)
+            case ImageSettings(width, height, Some(ScaleWithoutUpscale), _, _) => downscale(originalImage, width, height)
             case ImageSettings(Some(width), Some(height), Some(Stretch), _, _) => resize(originalImage, Crop, width, height)
             case ImageSettings(Some(width), Some(height), Some(Crop), _, gravity) =>
               // First resize to an image that retains the smallest dimension requested, the crop of the excess.
               val originalRatio = originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth
               val requestedRatio = height.asInstanceOf[Float] / width
-              val resizeMode = if (requestedRatio < originalRatio) FitWidth else FitHeight
-              val resized = resize(originalImage, resizeMode, width, height)
+              val (resizeMode, targetDimension) = if (requestedRatio < originalRatio) (FitWidth, width) else (FitHeight, height)
+              val resized = resize(originalImage, resizeMode, targetDimension)
               crop(resized, width, height, gravity getOrElse Center)
-            case ImageSettings(Some(width), Some(height), _, _, _) => resize(originalImage, Scale, width, height)
+            case ImageSettings(width, height, _, _, _) => upscale(originalImage, width, height)
             case _ => originalImage
           }
         }
@@ -127,7 +127,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
         // Make callback if required.
         imageCallback.foreach { fn =>
           val effectiveSettings = new ImageSettings(width = Some(image.getWidth), height = Some(image.getHeight),
-            mode = settings.mode.orElse(Some(Scale)), quality = settings.quality.orElse(Some(DefaultQuality)))
+            mode = settings.mode.orElse(Some(ScaleWithUpscale)), quality = settings.quality.orElse(Some(DefaultQuality)))
           fn(effectiveSettings)
         }
 
@@ -151,6 +151,41 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     }
   }
 
+  private def downscale(src: BufferedImage, width: Option[Int], height: Option[Int]): BufferedImage = (width, height) match {
+    case (Some(w), None) =>
+      if (w >= src.getWidth) src else resize(src, FitWidth, w)
+    case (None, Some(h)) =>
+      if (h >= src.getHeight) src else resize(src, FitHeight, h)
+    case (Some(w), Some(h)) if isDownscaleRequest(src, w, h) && bothDimensionsAreSmaller(src, w, h) =>
+      if (isLandscape(w, h) || isLandscape(src))
+        resize(src, FitWidth, w)
+      else
+        resize(src, FitHeight, h)
+    case (Some(w), Some(h)) if w < src.getWidth => resize(src, FitWidth, w)
+    case (Some(w), Some(h)) if h < src.getHeight => resize(src, FitHeight, h)
+    case _ => src
+    }
+
+  private def isLandscape(src: BufferedImage): Boolean = isLandscape(src.getWidth, src.getHeight)
+
+  private def isLandscape(w: Int, h: Int): Boolean = w > h
+
+  private def bothDimensionsAreSmaller(src: BufferedImage, w: Int, h: Int) = (w < src.getWidth) && (h < src.getHeight)
+
+  private def isDownscaleRequest(src: BufferedImage, targetWidth: Int, targetHeight: Int): Boolean =
+    targetHeight < src.getHeight || targetWidth < src.getWidth
+
+  /*
+   * Scale and optionally upscale the image
+   */
+  private def upscale(src: BufferedImage, width: Option[Int], height: Option[Int]): BufferedImage = (width, height) match {
+    case (Some(w), None) => resize(src, FitWidth, w)
+    case (None, Some(h)) => resize(src, FitHeight, h)
+    case (Some(w), Some(h)) if src.getHeight >= src.getWidth => resize(src, FitHeight, h)
+    case (Some(w), Some(h)) => resize(src, FitWidth, w)
+    case (None, None) => src
+  }
+
   private def resize(src: BufferedImage, mode: ResizeMode, targetSize: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
@@ -170,20 +205,23 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   private def resize(src: BufferedImage, mode: ResizeMode, width: Int, height: Int): BufferedImage =
     Await.result(Future {
       time("resize", Debug) {
-        val r = mode match {
-          case Scale =>
-            new ResampleOp(width, Math.round((width.toFloat / src.getWidth.toFloat) * src.getHeight))
+        val r: Option[ResampleOp] = mode match {
           case FitHeight =>
             val w = Math.round((width * src.getWidth) / src.getHeight.toFloat)
-            new ResampleOp(w, height)
+            Some(new ResampleOp(w, height))
           case FitWidth =>
             val h = Math.round((height * src.getHeight) / src.getWidth.toFloat)
-            new ResampleOp(width, h)
+            Some(new ResampleOp(width, h))
           case _ =>
-            new ResampleOp(width, height)
+            Some(new ResampleOp(width, height))
         }
-        r.setFilter(ResampleFilters.getLanczos3Filter)
-        r.filter(src, null)
+        r match {
+          case Some(op) =>
+            op.setFilter(ResampleFilters.getLanczos3Filter)
+            op.filter(src, null)
+          case None =>
+            src
+        }
       }
     }, timeout)
 
