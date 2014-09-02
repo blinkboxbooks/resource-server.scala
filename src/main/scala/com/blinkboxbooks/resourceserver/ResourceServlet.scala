@@ -40,7 +40,10 @@ import scala.io.Source
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
   private val unchanged = new ImageSettings()
-  private val ApplicationVersion = Source.fromFile("VERSION").bufferedReader().readLine.trim
+  private val ApplicationVersion = Try(Source.fromFile("VERSION").mkString) match {
+    case Success(v) => v
+    case Failure(_) => "0.0.0"
+  }
 
   before() {
     response.characterEncoding = None
