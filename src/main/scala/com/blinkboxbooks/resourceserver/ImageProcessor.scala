@@ -117,11 +117,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
               val originalRatio = originalImage.getHeight.asInstanceOf[Float] / originalImage.getWidth
               val requestedRatio = height.asInstanceOf[Float] / width
               val (resizeMode, targetDimension) = if (requestedRatio < originalRatio) (FitWidth, width) else (FitHeight, height)
-              val resized =
-                if (width == height)
-                  resize(originalImage, resizeMode, width, height)
-                else
-                  resize(originalImage, resizeMode, targetDimension)
+              val resized = resize(originalImage, resizeMode, targetDimension)
               crop(resized, width, height, gravity getOrElse Center)
             case ImageSettings(width, height, _, _, _) => upscale(originalImage, width, height)
             case _ => originalImage
@@ -160,16 +156,24 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
       if (w >= src.getWidth) src else resize(src, FitWidth, w)
     case (None, Some(h)) =>
       if (h >= src.getHeight) src else resize(src, FitHeight, h)
-    case (Some(w), Some(h)) if (w < src.getWidth) || (h < src.getHeight) =>
-      if ((w < src.getWidth) && (h < src.getHeight)) {
-        if (h > w) resize(src, FitHeight, h) else resize(src, FitWidth, w)
-      } else if (w < src.getWidth) {
+    case (Some(w), Some(h)) if isDownscaleRequest(src, w, h) && bothDimensionsAreSmaller(src, w, h) =>
+      if (isLandscape(w, h) || isLandscape(src))
         resize(src, FitWidth, w)
-      } else {
+      else
         resize(src, FitHeight, h)
-      }
+    case (Some(w), Some(h)) if w < src.getWidth => resize(src, FitWidth, w)
+    case (Some(w), Some(h)) if h < src.getHeight => resize(src, FitHeight, h)
     case _ => src
     }
+
+  private def isLandscape(src: BufferedImage): Boolean = isLandscape(src.getWidth, src.getHeight)
+
+  private def isLandscape(w: Int, h: Int): Boolean = w > h
+
+  private def bothDimensionsAreSmaller(src: BufferedImage, w: Int, h: Int) = (w < src.getWidth) && (h < src.getHeight)
+
+  private def isDownscaleRequest(src: BufferedImage, targetWidth: Int, targetHeight: Int): Boolean =
+    targetHeight < src.getHeight || targetWidth < src.getWidth
 
   /*
    * Scale and optionally upscale the image
@@ -177,11 +181,8 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   private def upscale(src: BufferedImage, width: Option[Int], height: Option[Int]): BufferedImage = (width, height) match {
     case (Some(w), None) => resize(src, FitWidth, w)
     case (None, Some(h)) => resize(src, FitHeight, h)
-    case (Some(w), Some(h)) =>
-      if (src.getHeight >= src.getWidth)
-        resize(src, FitHeight, h)
-      else
-        resize(src, FitWidth, w)
+    case (Some(w), Some(h)) if src.getHeight >= src.getWidth => resize(src, FitHeight, h)
+    case (Some(w), Some(h)) => resize(src, FitWidth, w)
     case (None, None) => src
   }
 
