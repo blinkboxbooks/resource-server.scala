@@ -40,10 +40,7 @@ import scala.io.Source
   private val mimeTypes = new MimetypesFileTypeMap(getClass.getResourceAsStream("/mime.types"))
   private val characterEncodingForFiletype = Map("css" -> "utf-8", "js" -> "utf-8")
   private val unchanged = new ImageSettings()
-  private val ApplicationVersion = Try(Source.fromFile("VERSION").mkString) match {
-    case Success(v) => v
-    case Failure(_) => "0.0.0"
-  }
+  private val ApplicationVersion = Try(Source.fromFile("VERSION").mkString).getOrElse("0.0.0")
 
   before() {
     response.characterEncoding = None
@@ -162,7 +159,6 @@ import scala.io.Source
         val callback: ImageSettings => Unit = (effectiveSettings) => {
           response.headers += ("Content-Location" -> canonicalUri(baseFilename, effectiveSettings))
         }
-
         time("transform", Debug) { imageProcessor.transform(targetFileType, boundedInput, response.getOutputStream, imageSettings, Some(callback)) }
       } else {
         response.headers += ("Content-Location" -> request.getRequestURI)
@@ -222,7 +218,6 @@ object ResourceServlet {
       override def warnThreshold = warning
       override def errorThreshold = err
     }
-
     new ResourceServlet(resolver, new ThreadPoolImageProcessor(numResizingThreads), cache, cacheingContext) with Thresholds
   }
 
