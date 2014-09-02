@@ -62,7 +62,6 @@ class ResourceServlet(resolver: FileResolver,
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params;([^/]*)/(.*)""".r) {
     import Utils._
-
     time("request") {
       val captures = multiParams("captures")
       val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
@@ -95,7 +94,8 @@ class ResourceServlet(resolver: FileResolver,
           halt(400, "Quality parameter must be between 0 and 100")
 
         val mode = imageParams.get("img:m") map {
-          case "scale" | "scale!" => Scale
+          case "scale" => ScaleWithoutUpscale
+          case "scale!" => ScaleWithUpscale
           case "crop" => Crop
           case "stretch" => Stretch
           case m @ _ => invalidParameter("img:m", m)

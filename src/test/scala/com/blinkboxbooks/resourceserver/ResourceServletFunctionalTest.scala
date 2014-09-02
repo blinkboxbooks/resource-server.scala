@@ -230,9 +230,44 @@ class ResourceServletFunctionalTest extends ScalatraSuite
       // Should just ignore the quality setting.
       assert(status === 200)
       checkImage(response.inputStream, "png", 160, 100)
-      assert(header("Content-Location") === "/params;img:h=100;img:m=scale;img:q=85;img:w=160;v=0/test.epub/images/test.png")
+      assert(header("Content-Location") === "/params;img:h=100;img:m=scale!;img:q=85;img:w=160;v=0/test.epub/images/test.png")
     }
   }
+
+  test("Mode \"scale\" does not upscale images"){
+    get(s"/params;img:q=85;img:w=1000;img:h=1000;img:m=scale;v=0/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 320, 200)
+    }
+  }
+
+  test("Mode \"scale!\" does upscale images"){
+    // CP-1789
+    // should perform the largest possible transformation to fit in the bounding box
+    get(s"/params;img:q=85;img:w=640;img:h=500;img:m=scale!;v=0/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 640, 400)
+    }
+    get(s"/params;img:q=85;img:h=1000;img:w=400;img:m=scale!;v=0/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 400, 250)
+    }
+  }
+
+  test("Mode \"scale!\" is the default resize mode"){
+    get(s"/params;img:q=85;img:w=640;img:h=500;v=0/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 640, 400)
+    }
+  }
+
+  test("cropping image to smaller aspect ratio works"){
+    get(s"/params;img:q=85;img:w=170;img:h=45;v=0;img:m=crop/test.epub/images/test.png") {
+      assert(status === 200)
+      checkImage(response.inputStream, "png", 170, 45)
+    }
+  }
+
 
   test("Check against cross-site scripting attack") {
     val paths = List(

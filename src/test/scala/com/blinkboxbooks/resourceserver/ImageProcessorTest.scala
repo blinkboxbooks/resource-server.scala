@@ -1,17 +1,15 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io._
+
 import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
+import org.scalatest.{BeforeAndAfter, FunSuite}
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.FunSuite
-import org.scalatest.BeforeAndAfter
-import org.mockito.Mockito.spy
-import org.mockito.Mockito.verify
-import org.mockito.Matchers.any
 
 object ImageProcessorTest {
   // Fixed test data.
+
   val jpegData = IOUtils.toByteArray(getClass.getResourceAsStream("/test.jpeg"))
   val pngData = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png"))
 }
@@ -19,7 +17,7 @@ object ImageProcessorTest {
 @RunWith(classOf[JUnitRunner])
 class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
 
-  import ImageProcessorTest._
+  import com.blinkboxbooks.resourceserver.ImageProcessorTest._
 
   val processor: ImageProcessor = new ThreadPoolImageProcessor(1)
   var output: ByteArrayOutputStream = _
@@ -44,7 +42,7 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   test("Transform png") {
-    processor.transform("png", pngImage, output, new ImageSettings(Some(50), Some(40), Some(Scale), None))
+    processor.transform("png", pngImage, output, new ImageSettings(Some(50), Some(40), Some(ScaleWithoutUpscale), None))
     assert(output.size > 0)
     // When scaling, the image ratio is retained, hence the requested height isn't taken into account.
     checkImage(data(output), "png", 50, 31)
@@ -124,8 +122,8 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
     }
   }
 
-  test("Resize by scaling") {
-    // When scaling, we create an image that fits into the bounding box of the specified size, 
+  test("Resize by scaling (\"scale!\")") {
+    // When scaling with mode "scale!", we create an image that fits into the bounding box of the specified size,
     // that will be smaller when the aspect ratio of the original image and requested size is different.
     Map(
       (320, 200) -> (320, 200),
@@ -136,9 +134,44 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
         case ((inputWidth, inputHeight), (outputWidth, outputHeight)) =>
           val output = new ByteArrayOutputStream()
           processor.transform("jpeg", jpegImage, output,
-            new ImageSettings(width = Some(inputWidth), height = Some(inputHeight), mode = Some(Scale)))
+            new ImageSettings(width = Some(inputWidth), height = Some(inputHeight), mode = Some(ScaleWithUpscale)))
           checkImage(data(output), "jpeg", outputWidth, outputHeight)
       }
+  }
+
+  test("Resize by scaling (\"scale\")") {
+    // When scaling ("scale" mode), only scale downwards. If a request comes for an image to be made larger, return the
+    // original image: See CP-1789
+    Map(
+      (320, 600),
+      (640, 200),
+      (1505, 540)).foreach {
+      case (inputWidth, inputHeight) =>
+        val output = new ByteArrayOutputStream()
+        processor.transform("jpeg", jpegImage, output,
+          new ImageSettings(width = Some(inputWidth), height = Some(inputHeight), mode = Some(ScaleWithoutUpscale)))
+        checkImage(data(output), "jpeg", 320, 200)
+    }
+    Map(
+      320 -> (320, 200),
+      160 -> (160, 100),
+      40 -> (40, 25)).foreach {
+      case ((inputWidth), (expectedWidth, expectedHeight)) =>
+        val output = new ByteArrayOutputStream()
+        processor.transform("jpeg", jpegImage, output,
+          new ImageSettings(width = Some(inputWidth), mode = Some(ScaleWithoutUpscale)))
+        checkImage(data(output), "jpeg", expectedWidth, expectedHeight)
+    }
+    Map(
+      25 -> (40, 25),
+      50 -> (80, 50),
+      100 -> (160, 100)).foreach {
+      case ((inputHeight), (expectedWidth, expectedHeight)) =>
+        val output = new ByteArrayOutputStream()
+        processor.transform("jpeg", jpegImage, output,
+          new ImageSettings(height = Some(inputHeight), mode = Some(ScaleWithoutUpscale)))
+        checkImage(data(output), "jpeg", expectedWidth, expectedHeight)
+    }
   }
 
   test("Convert image to GIF") {
@@ -155,8 +188,7 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
   }
 
   test("Crop positions using gravity") {
-    import Gravity._
-    import ThreadPoolImageProcessor._
+    import com.blinkboxbooks.resourceserver.ThreadPoolImageProcessor._
 
     // Cases where the height is unchanged.
     assert(cropPosition(300, 200, 100, 200, Gravity.Center) === (100, 0))

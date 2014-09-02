@@ -25,7 +25,7 @@ class UtilsTest extends FunSuite {
 
   test("Canonical URI with full set of parameters, not cropped") {
     val settings = new ImageSettings(height = Some(100), width = Some(140), quality = Some(0.42f), gravity = Some(Gravity.NorthWest),
-      mode = Some(Scale))
+      mode = Some(ScaleWithoutUpscale))
     assert(canonicalUri("foo/bar.baz", settings) === "/params;img:h=100;img:m=scale;img:q=42;img:w=140;v=0/foo/bar.baz")
   }
 
