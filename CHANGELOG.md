@@ -1,5 +1,11 @@
 # Change log
 
+## 1.1.9 ([#36](https://git.mobcastdev.com/Platform/baldrick/pull/36) 2014-09-04 11:25:34)
+
+Remove unneeded http headers
+
+Patch to remove unneeded(?) HTTP headers
+
 ## 1.1.8 ([#35](https://git.mobcastdev.com/Platform/baldrick/pull/35) 2014-09-02 11:32:05)
 
 CP-1789: scale! vs scale
