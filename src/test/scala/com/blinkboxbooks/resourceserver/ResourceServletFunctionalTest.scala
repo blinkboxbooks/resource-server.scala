@@ -70,11 +70,9 @@ class ResourceServletFunctionalTest extends ScalatraSuite
       checkIsCacheable()
       assert(header("Content-Location") === "/sub/ch02.html")
       val expectedExpiryTime = 365 * 24 * 60 * 60
-      assert(header("expires_in").toInt === expectedExpiryTime)
       assert(header("Cache-Control") === s"public, max-age=$expectedExpiryTime")
       assert(header("X-Application-Version").matches("""\d+\.\d+\.\d+"""))
       assert(header("Access-Control-Allow-Origin") === "*")
-      assert(!header("now").isEmpty())
       assert(!header("Date").isEmpty())
     }
   }
