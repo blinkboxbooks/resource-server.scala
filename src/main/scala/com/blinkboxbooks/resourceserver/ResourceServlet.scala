@@ -45,10 +45,8 @@ import scala.io.Source
   before() {
     response.characterEncoding = None
     val expiryTime = org.joda.time.Duration.standardDays(365)
-    response.headers += ("expires_in" -> expiryTime.getStandardSeconds.toString)
     response.headers += ("Cache-Control" -> s"public, max-age=${expiryTime.getStandardSeconds}")
     val now = new DateTime()
-    response.headers += ("now" -> timeFormat.print(now))
     response.headers += ("Date" -> dateTimeFormat.print(now))
     response.headers += ("Expires" -> dateTimeFormat.print(now plus expiryTime))
     response.headers += ("X-Application-Version" -> ApplicationVersion)
