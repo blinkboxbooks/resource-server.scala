@@ -62,14 +62,14 @@ import scala.io.Source
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
-  get("""^\/params(;|%3B)([^/]*)/(.*)""".r) {
+  get("""^\/params(?:;|%3B)([^/]*)/(.*)""".r) {
     import com.blinkboxbooks.resourceserver.Utils._
     time("request") {
       val captures = multiParams("captures")
-      val params = URLDecoder.decode(captures(1), "UTF-8")
+      val params = URLDecoder.decode(captures(0), "UTF-8")
       val imageParams = getMatrixParams(params).getOrElse(halt(400, "Invalid parameter syntax"))
 
-      val filename = captures(2)
+      val filename = captures(1)
       val requestIsForImage = fileExtension(filename) match {
         case (Some(ext), _) if ACCEPTED_IMAGE_FORMATS.contains(ext) => true
         case _ => false
@@ -184,7 +184,9 @@ import scala.io.Source
   private def gravityParam(parameters: Map[String, String], name: String): Option[Gravity] =
     parameters.get(name).map(str => Try(Gravity.withName(str)) getOrElse invalidParameter(name, str))
 
-  private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
+  private def invalidParameter(name: String, value: String) = halt(400, s"'${safeValue(value)}' is not a valid value for '$name'")
+
+  private def safeValue(value: String): String = xml.Utility.escape(value)
 
   private def checkedInput(input: Try[InputStream]) = input match {
     case Success(path) => path
