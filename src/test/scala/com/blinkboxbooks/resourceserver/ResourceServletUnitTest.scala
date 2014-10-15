@@ -89,6 +89,14 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
+  test("Download image in epub with encoded URL") {
+    get("/params%3Bv%3D0/test.epub/test/content/images/test.jpeg") {
+      assert(status === 200)
+      verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
+      verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
+    }
+  }
+
   test("Download image with all available image settings, image not in cache") {
     doReturn(None).when(imageCache).getImage(anyString, anyInt)
 
