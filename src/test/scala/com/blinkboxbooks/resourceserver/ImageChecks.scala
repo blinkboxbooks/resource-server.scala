@@ -1,8 +1,9 @@
 package com.blinkboxbooks.resourceserver
 
 import org.scalatest.Assertions._
-import javax.imageio.ImageIO
+import java.awt.image.BufferedImage
 import java.io.InputStream
+import javax.imageio.ImageIO
 
 trait ImageChecks {
 
@@ -20,10 +21,10 @@ trait ImageChecks {
    * Check that the given data is readable as an image of the specified type,
    * and has the desired dimensions.
    */
-  def checkImage(input: InputStream, filetype: String, width: Int, height: Int) {
+  def checkImage(input: InputStream, filetype: String, width: Int, height: Int, details: String = ""): BufferedImage = {
     val image = readImage(input, filetype)
-    assert(image.getWidth() === width, s"Got image of (${image.getWidth}, ${image.getHeight}), expected ($width, $height)")
-    assert(image.getHeight() === height, s"Got image of (${image.getWidth}, ${image.getHeight}), expected ($width, $height)")
+    assert(image.getWidth() == width && image.getHeight() == height, details)
+    image
   }
 
   private def readImage(input: InputStream, filetype: String) = {

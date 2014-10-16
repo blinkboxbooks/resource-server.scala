@@ -102,9 +102,11 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     settings: ImageSettings, imageCallback: Option[ImageSettings => Unit]) {
 
     // Read the original image.
-    for (originalImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
+    for (inputImage <- managed(time("reading image", Debug) { ImageIO.read(input) })) {
 
-      if (originalImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
+      if (inputImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
+
+      val originalImage = if (inputImage.getAlphaRaster() == null) inputImage else nonTransparentImage(inputImage)
 
       // Resize the image if a new size has been requested.
       for (
@@ -151,6 +153,14 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
     }
   }
 
+  /** Write data into an RGB buffered image (one with no transparency channel). */
+  def nonTransparentImage(image: BufferedImage): BufferedImage = time("copy image", Debug) {
+    val copy = new BufferedImage(image.getWidth(),
+      image.getHeight(), BufferedImage.TYPE_INT_RGB);
+    copy.createGraphics().drawImage(image, null, null);
+    copy
+  }
+
   private def downscale(src: BufferedImage, width: Option[Int], height: Option[Int]): BufferedImage = (width, height) match {
     case (Some(w), None) =>
       if (w >= src.getWidth) src else resize(src, FitWidth, w)
@@ -175,7 +185,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
   private def isDownscaleRequest(src: BufferedImage, targetWidth: Int, targetHeight: Int): Boolean =
     targetHeight < src.getHeight || targetWidth < src.getWidth
 
-  /*
+  /**
    * Scale and optionally upscale the image
    */
   private def upscale(src: BufferedImage, width: Option[Int], height: Option[Int]): BufferedImage = (width, height) match {
