@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.11 ([#38](https://git.mobcastdev.com/Platform/baldrick/pull/38) 2014-10-16 15:11:57)
+
+CP-1782: Fix miscoloured output for RGBA PNG files
+
+### Bugfix:
+
+- Fix strange pink/purple hue in JPEG files that are generated from input files that are PNG files with an RGBA channel (i.e. has a transparency layer).
+
+
 ## 1.1.10 ([#37](https://git.mobcastdev.com/Platform/baldrick/pull/37) 2014-10-15 17:02:27)
 
 CP-1951: URL-decode parameters in request
