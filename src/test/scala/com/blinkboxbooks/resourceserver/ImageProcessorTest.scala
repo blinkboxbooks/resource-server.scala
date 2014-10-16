@@ -62,11 +62,11 @@ class ImageProcessorTest extends FunSuite with BeforeAndAfter with ImageChecks {
 
   test("Transform png with transparency channel to jpeg (CP-1782)") {
     for (filename <- List("dummy.png", "crash_test_dummy.png")) {
-      val transparencyPngData = IOUtils.toByteArray(ImageProcessorTest.getClass.getResourceAsStream("/crash_test_dummy.png"))
+      val transparencyPngData = IOUtils.toByteArray(ImageProcessorTest.getClass.getResourceAsStream("/" + filename))
       val transparencyPngImage = new ByteArrayInputStream(transparencyPngData)
       processor.transform("jpeg", transparencyPngImage, output, new ImageSettings(None, None, None, None))
       assert(output.size > 0)
-      val image = checkImage(data(output), "jpeg", 712, 1000, s"Filename: $filename")
+      val image = readImage(data(output), "jpeg")
 
       assert(image.getAlphaRaster() == null, s"Output image for file $filename should have no alpha channel")
     }

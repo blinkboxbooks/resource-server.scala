@@ -27,7 +27,7 @@ trait ImageChecks {
     image
   }
 
-  private def readImage(input: InputStream, filetype: String) = {
+  def readImage(input: InputStream, filetype: String) = {
     try {
       val reader = ImageIO.getImageReadersByFormatName(filetype).next
       val iis = ImageIO.createImageInputStream(input)
