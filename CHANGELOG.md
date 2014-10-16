@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.10 ([#37](https://git.mobcastdev.com/Platform/baldrick/pull/37) 2014-10-15 17:02:27)
+
+CP-1951: URL-decode parameters in request
+
+### Improvement
+
+- CP-1951: URL decode parameters in request, to cope with client double-encoding them.
+
+
 ## 1.1.9 ([#36](https://git.mobcastdev.com/Platform/baldrick/pull/36) 2014-09-04 11:25:34)
 
 Remove unneeded http headers
