@@ -1,6 +1,7 @@
 package com.blinkboxbooks.resourceserver
 
 import java.io.InputStream
+import java.net.URLDecoder
 import java.nio.file._
 import java.util.Locale
 import java.util.concurrent.RejectedExecutionException
@@ -61,11 +62,12 @@ import scala.io.Source
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
-  get("""^\/params;([^/]*)/(.*)""".r) {
+  get("""^\/params(?:;|%3B)([^/]*)/(.*)""".r) {
     import com.blinkboxbooks.resourceserver.Utils._
     time("request") {
       val captures = multiParams("captures")
-      val imageParams = getMatrixParams(captures(0)).getOrElse(halt(400, "Invalid parameter syntax"))
+      val params = URLDecoder.decode(captures(0), "UTF-8")
+      val imageParams = getMatrixParams(params).getOrElse(halt(400, "Invalid parameter syntax"))
 
       val filename = captures(1)
       val requestIsForImage = fileExtension(filename) match {
@@ -182,7 +184,9 @@ import scala.io.Source
   private def gravityParam(parameters: Map[String, String], name: String): Option[Gravity] =
     parameters.get(name).map(str => Try(Gravity.withName(str)) getOrElse invalidParameter(name, str))
 
-  private def invalidParameter(name: String, value: String) = halt(400, s"'$value' is not a valid value for '$name'")
+  private def invalidParameter(name: String, value: String) = halt(400, s"'${safeValue(value)}' is not a valid value for '$name'")
+
+  private def safeValue(value: String): String = xml.Utility.escape(value)
 
   private def checkedInput(input: Try[InputStream]) = input match {
     case Success(path) => path
@@ -190,7 +194,7 @@ import scala.io.Source
       logger.info("Request for invalid path rejected: " + e.getMessage)
       halt(400, "The requested resource path is not accessible")
     case Failure(e) =>
-      logger.info("Request for rejected as the file doesn't exist: " + e.getMessage)
+      logger.info("Request rejected as the file doesn't exist: " + e.getMessage)
       halt(404, "The requested resource does not exist here")
   }
 
