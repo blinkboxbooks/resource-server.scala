@@ -69,7 +69,7 @@ import scala.io.Source
       val params = URLDecoder.decode(captures(0), "UTF-8")
       val imageParams = getMatrixParams(params).getOrElse(halt(400, "Invalid parameter syntax"))
 
-      val filename = captures(1)
+      val filename = relativePath(captures(1))
       val requestIsForImage = fileExtension(filename) match {
         case (Some(ext), _) if ACCEPTED_IMAGE_FORMATS.contains(ext) => true
         case _ => false
@@ -187,6 +187,8 @@ import scala.io.Source
   private def invalidParameter(name: String, value: String) = halt(400, s"'${safeValue(value)}' is not a valid value for '$name'")
 
   private def safeValue(value: String): String = xml.Utility.escape(value)
+
+  private def relativePath(path: String): String = path.dropWhile(_ == '/')
 
   private def checkedInput(input: Try[InputStream]) = input match {
     case Success(path) => path
