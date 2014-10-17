@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.12 ([#39](https://git.mobcastdev.com/Platform/baldrick/pull/39) 2014-10-16 16:59:15)
+
+CP-1865: Allow double slash at start of path
+
+### Bugfix:
+
+- Allow multiple slashes at start of path, while still treating these as relative paths, for requests with parameters, to be backwards compatible with previous resource server, and cope with client that does it that way.
+
+
 ## 1.1.11 ([#38](https://git.mobcastdev.com/Platform/baldrick/pull/38) 2014-10-16 15:11:57)
 
 CP-1782: Fix miscoloured output for RGBA PNG files
