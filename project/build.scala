@@ -43,7 +43,10 @@ object ResourceServerBuild extends Build {
         "commons-io" % "commons-io" % "2.4",
         "com.google.jimfs" % "jimfs" % "1.0-rc1" % "test",
         "com.jsuereth" % "scala-arm_2.10" % "1.3",
-        "com.blinkbox.books" %% "common-config" % "0.7.0"
+        "com.blinkbox.books" %% "common-config" % "0.7.0",
+        "com.twelvemonkeys.common" % "common-lang" % "3.0",
+        "com.twelvemonkeys.imageio" % "imageio-core" % "3.0",
+        "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.0"
       )
     )
   )
