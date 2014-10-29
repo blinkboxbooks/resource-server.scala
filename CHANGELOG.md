@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.13 ([#40](https://git.mobcastdev.com/Platform/baldrick/pull/40) 2014-10-28 15:47:50)
+
+CP-2012: Deal with 'difficult' images.
+
+### Improvement:
+
+- Added Twelvemonkeys ImageIO plugin to deal with 'difficult' images.
+
+
 ## 1.1.12 ([#39](https://git.mobcastdev.com/Platform/baldrick/pull/39) 2014-10-16 16:59:15)
 
 CP-1865: Allow double slash at start of path
