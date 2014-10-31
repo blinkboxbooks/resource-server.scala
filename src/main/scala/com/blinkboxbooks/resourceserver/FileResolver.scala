@@ -94,7 +94,7 @@ object EpubEnabledFileResolver {
    * @throw IOException for syntactically invalid paths.
    */
   def parseEpubPath(path: String): (Option[String], String) = {
-    val names = path.split("/").toList
+    val names = path.split("/+").toList
     names.span(!_.toLowerCase.endsWith(".epub")) match {
       case (names, Nil) => (None, path)
       case (names, epubFile :: Nil) => (None, path)
