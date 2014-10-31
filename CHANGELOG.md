@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.14 ([#41](https://git.mobcastdev.com/Platform/baldrick/pull/41) 2014-10-31 17:52:15)
+
+CP-2029 Cope with double slashes in paths inside epubs
+
+### Improvements:
+
+- Be even more lenient with double slashes in paths.
+
+
 ## 1.1.13 ([#40](https://git.mobcastdev.com/Platform/baldrick/pull/40) 2014-10-28 15:47:50)
 
 CP-2012: Deal with 'difficult' images.
