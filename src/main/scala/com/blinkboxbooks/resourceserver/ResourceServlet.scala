@@ -62,7 +62,7 @@ import scala.io.Source
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
-  get("""^\/params(?:;|%3B)([^/]*)/(.*)""".r) {
+  get("""^\/params(?:;|%3[Bb])([^/]*)/(.*)""".r) {
     import com.blinkboxbooks.resourceserver.Utils._
     time("request") {
       val captures = multiParams("captures")
