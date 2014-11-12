@@ -170,7 +170,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/params;img:w=160;v=0/test.epub/test/content/images/test.jpeg") {
       // Should get image from file, as it's not in cache.
       verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
-      val imageSettings = new ImageSettings(width = Some(160), height = Some(120), gravity = None)
+      val imageSettings = new ImageSettings(width = Some(160), gravity = None)
       verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
         Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
