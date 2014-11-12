@@ -1,5 +1,16 @@
 # Change log
 
+## 1.1.16 ([#43](https://git.mobcastdev.com/Platform/baldrick/pull/43) 2014-11-12 12:16:57)
+
+Now supports floating point pixels (!)
+
+### Bug Fixes
+
+* The old Ruby resource server allowed floating point values for pixels
+and quality, and Tesco have taken a dependency on this for their Hudl2
+promotion cards. As such, we have no choice but to support floating
+point pixels in the new resource server. Sigh.
+
 ## 1.1.15 ([#42](https://git.mobcastdev.com/Platform/baldrick/pull/42) 2014-11-12 10:18:40)
 
 Now supports lowercase url-encoding of path
