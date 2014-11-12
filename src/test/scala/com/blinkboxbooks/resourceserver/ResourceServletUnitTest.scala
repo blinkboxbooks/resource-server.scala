@@ -151,6 +151,18 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
+  test("Resizing image with floating point width/height parameters ignores the fractional part") {
+    // We really don't want to allow this but it turns out the old ruby resource server did allow floating point
+    // width and height and Tesco have depended on this for their Hudl2 promotion cards. Obviously partial pixels
+    // make no sense but there's nothing much we can do about it now.
+    get("/params;img:w=160.0;img:h=120.7;v=0/test.epub/test/content/images/test.jpeg") {
+      assert(status === 200)
+      val imageSettings = new ImageSettings(width = Some(160), height = Some(120), gravity = None)
+      verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
+        Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
+    }
+  }
+
   test("Resizing image when requested size is bigger than any cached version") {
     // Set up cache so it says image is too big.
     doReturn(false).when(imageCache).wouldCacheImage(any[Option[Int]])
@@ -158,7 +170,7 @@ class ResourceServletUnitTest extends ScalatraSuite
     get("/params;img:w=160;v=0/test.epub/test/content/images/test.jpeg") {
       // Should get image from file, as it's not in cache.
       verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
-      val imageSettings = new ImageSettings(width = Some(160), gravity = None)
+      val imageSettings = new ImageSettings(width = Some(160), height = Some(120), gravity = None)
       verify(imageProcessor).transform(Matchers.eq("jpeg"), any[InputStream], any[OutputStream],
         Matchers.eq(imageSettings), any[Some[ImageSettings => Unit]])
       verify(imageCache).getImage("test.epub/test/content/images/test.jpeg", 160)
