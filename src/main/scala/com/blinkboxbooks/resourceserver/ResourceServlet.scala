@@ -178,8 +178,10 @@ import scala.io.Source
    */
   override def requestPath(implicit request: HttpServletRequest) = request.getRequestURI
 
+  // this converts to a float first and then to an int to support floating point numbers which Tesco took a
+  // dependency on for the Hudl2 promotion cards. we don't want to do this, but have no choice.
   private def intParam(parameters: Map[String, String], name: String): Option[Int] =
-    parameters.get(name).map(str => Try(str.toInt) getOrElse invalidParameter(name, str))
+    parameters.get(name).map(str => Try(str.toFloat.toInt) getOrElse invalidParameter(name, str))
 
   private def gravityParam(parameters: Map[String, String], name: String): Option[Gravity] =
     parameters.get(name).map(str => Try(Gravity.withName(str)) getOrElse invalidParameter(name, str))
