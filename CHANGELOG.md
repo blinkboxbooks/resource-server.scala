@@ -1,5 +1,16 @@
 # Change log
 
+## 1.1.15 ([#42](https://git.mobcastdev.com/Platform/baldrick/pull/42) 2014-11-12 10:18:40)
+
+Now supports lowercase url-encoding of path
+
+### Bug Fixes
+
+- When paths are received URL-encoded in lowercase these are also
+supported. This shouldn’t happen but it appears that Level 3 mangle the
+already mangled URLs sent by the Android app to make them even more
+broken than they were…
+
 ## 1.1.14 ([#41](https://git.mobcastdev.com/Platform/baldrick/pull/41) 2014-10-31 17:52:15)
 
 CP-2029 Cope with double slashes in paths inside epubs
