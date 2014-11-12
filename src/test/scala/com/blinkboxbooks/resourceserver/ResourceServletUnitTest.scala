@@ -97,6 +97,14 @@ class ResourceServletUnitTest extends ScalatraSuite
     }
   }
 
+  test("Download image in epub with lower-case encoded URL") {
+    get("/params%3bv%3d0/test.epub/test/content/images/test.jpeg") {
+      assert(status === 200)
+      verify(fileResolver).resolve("test.epub/test/content/images/test.jpeg")
+      verifyNoMoreInteractions(fileResolver, imageProcessor, imageCache)
+    }
+  }
+
   test("Download image when using double slash at start of path") {
     get("/params;v=0//test.epub/test/content/images/test.jpeg") {
       assert(status === 200)
