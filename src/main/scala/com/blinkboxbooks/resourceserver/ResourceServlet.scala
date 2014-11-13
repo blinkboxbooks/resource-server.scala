@@ -69,7 +69,7 @@ import scala.io.Source
       val params = URLDecoder.decode(captures(0), "UTF-8")
       val imageParams = getMatrixParams(params).getOrElse(halt(400, "Invalid parameter syntax"))
 
-      val filename = relativePath(captures(1))
+      val filename = relativePath(URLDecoder.decode(captures(1), "UTF-8"))
       val requestIsForImage = fileExtension(filename) match {
         case (Some(ext), _) if ACCEPTED_IMAGE_FORMATS.contains(ext) => true
         case _ => false
