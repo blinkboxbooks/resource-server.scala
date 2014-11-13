@@ -53,6 +53,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/test.jpeg"), new File(rootDir, "test.jpeg"))
     FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/test.png"), new File(rootDir, "test.png"))
     FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/test.epub"), new File(rootDir, "test.epub"))
+    FileUtils.copyInputStreamToFile(getClass.getResourceAsStream("/spaces.epub"), new File(rootDir, "spaces.epub"))
   }
 
   before {
@@ -105,6 +106,16 @@ class ResourceServletFunctionalTest extends ScalatraSuite
       assert(body.contains("Welcome"))
       assert(header("Content-Length") === "28")
       assert(header("Content-Type") === "text/html")
+      checkIsCacheable()
+    }
+  }
+
+  test("Download file inside epub file with spaces in path") {
+    get("/params;v=0/spaces.epub/OPS/001%20-%20Cover.xhtml") {
+      assert(status === 200)
+      assert(body.contains("Cover"))
+      assert(header("Content-Length") === "810")
+      assert(header("Content-Type") === "application/xhtml+xml")
       checkIsCacheable()
     }
   }
