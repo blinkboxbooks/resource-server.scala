@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.17 ([#44](https://git.mobcastdev.com/Platform/baldrick/pull/44) 2014-11-13 16:19:25)
+
+Handles URL-encoded resource names
+
+### Bug Fixes
+
+- URL-decodes the file name portion of the path as well as the params,
+e.g. to handle items with spaces in the path.
+
 ## 1.1.16 ([#43](https://git.mobcastdev.com/Platform/baldrick/pull/43) 2014-11-12 12:16:57)
 
 Now supports floating point pixels (!)
