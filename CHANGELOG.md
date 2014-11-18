@@ -1,5 +1,14 @@
 # Change log
 
+## 1.1.18 ([#46](https://git.mobcastdev.com/Platform/baldrick/pull/46) 2014-11-18 15:35:35)
+
+Add tests for If-Range header
+
+### Improvements
+
+- Added tests for the (correctly unsupported) `If-Range` header.
+- Removed `vendor` from git accepted files
+
 ## 1.1.17 ([#44](https://git.mobcastdev.com/Platform/baldrick/pull/44) 2014-11-13 16:19:25)
 
 Handles URL-encoded resource names
