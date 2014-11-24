@@ -1,12 +1,13 @@
 package com.blinkboxbooks.resourceserver
 
 import com.blinkbox.books.config.Configuration
+import com.blinkbox.books.logging.Loggers
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.webapp.WebAppContext
 import org.scalatra.servlet.ScalatraListener
 
-object JettyLauncher extends App with Configuration {
+object JettyLauncher extends App with Configuration with Loggers {
     val port = config.getInt("resource.server.port")
     val contextPath = config.getString("resource.server.path")
 

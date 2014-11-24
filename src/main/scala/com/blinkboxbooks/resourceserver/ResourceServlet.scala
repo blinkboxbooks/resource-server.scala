@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletRequest
 
 import com.blinkboxbooks.resourceserver.MatrixParameters._
 import com.blinkboxbooks.resourceserver.Utils._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatra.ScalatraServlet
@@ -27,7 +27,7 @@ import scala.util.{Failure, Success, Try}
  */
 class ResourceServlet(resolver: FileResolver,
   imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
-  extends ScalatraServlet with Logging with TimeLogging {
+  extends ScalatraServlet with StrictLogging with HttpMonitoring with TimeLogging {
 
   import com.blinkboxbooks.resourceserver.Gravity._
   import com.blinkboxbooks.resourceserver.ResourceServlet._
@@ -56,15 +56,17 @@ import scala.io.Source
 
   /** Direct file access. */
   get("/*") {
-    val filename = multiParams("splat").head
-    logger.debug(s"Catch-all fallback for direct file access: $filename")
-    handleFileRequest(filename)
+    monitor(request, response) {
+      val filename = multiParams("splat").head
+      logger.debug(s"Catch-all fallback for direct file access: $filename")
+      handleFileRequest(URLDecoder.decode(filename, "UTF-8"))
+    }
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params(?:;|%3[Bb])([^/]*)/(.*)""".r) {
     import com.blinkboxbooks.resourceserver.Utils._
-    time("request") {
+    monitor(request, response) {
       val captures = multiParams("captures")
       val params = URLDecoder.decode(captures(0), "UTF-8")
       val imageParams = getMatrixParams(params).getOrElse(halt(400, "Invalid parameter syntax"))

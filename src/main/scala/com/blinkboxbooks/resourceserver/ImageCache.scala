@@ -1,27 +1,21 @@
 package com.blinkboxbooks.resourceserver
 
-import java.io.File
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.IOException
-import java.nio.file.CopyOption
-import java.nio.file.Path
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption._
-import java.nio.file.StandardCopyOption._
 import java.awt.image.BufferedImage
+import java.io.{File, IOException, InputStream, OutputStream}
+import java.nio.file.{Files, Path}
+import java.nio.file.StandardCopyOption._
+import java.nio.file.StandardOpenOption._
 import javax.imageio.ImageIO
-import javax.imageio.stream.FileImageOutputStream
-import javax.imageio.stream.ImageOutputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
+
+import com.blinkboxbooks.resourceserver.Utils._
+import com.typesafe.scalalogging.StrictLogging
 import org.imgscalr.Scalr
-import org.imgscalr.Scalr.Method
-import org.imgscalr.Scalr.Mode
-import com.typesafe.scalalogging.slf4j.Logging
+import org.imgscalr.Scalr.{Method, Mode}
+import resource._
+
 import scala.util.Try
 import scala.util.control.NonFatal
-import resource._
-import Utils._
 
 /**
  * A specialised cache that returns cached image files of various sizes.
@@ -40,19 +34,19 @@ trait ImageCache {
   /**
    * Look for a file with a cached image where the bounding size of the cached image
    * is at least the given size.
-   * @returns the smallest image that satisfies this constraint.
+   * @return the smallest image that satisfies this constraint.
    */
   def getImage(path: String, minSize: Int): Option[InputStream]
 
   /**
-   * @returns true if the given file size is smaller than the maximum size
+   * @return true if the given file size is smaller than the maximum size
    * of images stored in the cache. Always returns false for an undefined size.
    */
   def wouldCacheImage(size: Option[Int]): Boolean
 }
 
 class FileSystemImageCache(root: Path, sizes: Set[Int], resolver: FileResolver, writingEnabled: Boolean)
-  extends ImageCache with Logging {
+  extends ImageCache with StrictLogging {
 
   // Ordered list of the sizes at which images are cached.
   val targetSizes = sizes.toList.sorted

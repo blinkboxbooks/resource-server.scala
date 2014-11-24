@@ -1,6 +1,6 @@
 package com.blinkboxbooks.resourceserver
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import scala.concurrent.duration._
 
 /** Configuration for time logging, with default values. */
@@ -12,7 +12,7 @@ trait TimeLoggingThresholds {
 
 }
 
-trait TimeLogging extends Logging with TimeLoggingThresholds {
+trait TimeLogging extends StrictLogging with TimeLoggingThresholds {
 
   val Debug = 0
   val Info = 1

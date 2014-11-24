@@ -1,30 +1,20 @@
 package com.blinkboxbooks.resourceserver
 
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import scala.collection.JavaConversions._
-import scala.util.Success
-import org.apache.commons.io.FileUtils
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.nio.file.{FileSystem, Files, Path}
+
+import com.google.common.jimfs.{Configuration, Jimfs}
+import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
-import com.google.jimfs.Configuration
-import com.google.jimfs.Jimfs
-import TestUtils._
 import resource._
-import scala.util.Failure
-import org.apache.commons.io.IOUtils
-import java.io.ByteArrayOutputStream
+
+import scala.collection.JavaConversions._
+import scala.util.{Failure, Success}
 
 @RunWith(classOf[JUnitRunner])
 class FileSystemImageCacheTest extends FunSuite with BeforeAndAfter with BeforeAndAfterAll with ImageChecks with MockitoSugar {
