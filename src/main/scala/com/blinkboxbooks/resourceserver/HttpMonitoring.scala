@@ -30,16 +30,18 @@ trait HttpMonitoring extends StrictLogging {
     MDC.put("httpMethod", request.getMethod)
     MDC.put("httpPath", request.getPathInfo)
     MDC.put("httpPathAndQuery", request.getPathInfo + Option(request.getQueryString).map(q => s"?$q").getOrElse(""))
+    MDC.put("httpClientIP", request.getRemoteAddr)
     requestHeaderMdcKeys.foreach {
       case (name, key) => Option(request.getHeader(name)).foreach(MDC.put(key, _))
     }
-    MDC.put("httpClientIP", request.getRemoteAddr)
 
     val result = func
     val duration = System.currentTimeMillis - timestamp
     MDC.put("httpStatus", response.getStatus.toString)
-    // TODO: response headers
     MDC.put("httpApplicationTime", duration.toString)
+    responseHeaderMdcKeys.foreach {
+      case (name, key) => Option(response.getHeader(name)).foreach(MDC.put(key, _))
+    }
 
     val message = s"${request.getMethod} ${request.getPathInfo} returned ${response.getStatus} in ${duration}ms"
     if (response.getStatus >= 500) logger.error(message)

@@ -1,5 +1,6 @@
 package com.blinkboxbooks.resourceserver
 
+import org.eclipse.jetty.servlet.{ServletHolder, ServletMapping}
 import org.junit.runner.RunWith
 import org.scalatra.util.RicherString._
 import org.scalatra.test.scalatest.ScalatraSuite
@@ -49,6 +50,12 @@ class ResourceServletUnitTest extends ScalatraSuite
 
     // Mount the servlet under test.
     addServlet(new ResourceServlet(fileResolver, imageProcessor, imageCache, directExecutionContext), "/*")
+  }
+
+  after {
+    // Unmount the servlets.
+    servletContextHandler.getServletHandler.setServletMappings(new Array[ServletMapping](0))
+    servletContextHandler.getServletHandler.setServlets(new Array[ServletHolder](0))
   }
 
   test("Direct download of image file") {
@@ -188,6 +195,8 @@ class ResourceServletUnitTest extends ScalatraSuite
       .doThrow(exception)
       .when(executor).execute(any(classOf[Runnable]))
     val limitedExecutionContext = ExecutionContext.fromExecutor(executor)
+    servletContextHandler.getServletHandler.setServletMappings(new Array[ServletMapping](0))
+    servletContextHandler.getServletHandler.setServlets(new Array[ServletHolder](0))
     addServlet(new ResourceServlet(fileResolver, imageProcessor, imageCache, limitedExecutionContext), "/*")
 
     // Make two requests and check that both succeed, even though the image in the second request couldn't be cached.

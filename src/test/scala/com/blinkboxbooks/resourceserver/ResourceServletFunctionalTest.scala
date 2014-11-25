@@ -2,6 +2,8 @@ package com.blinkboxbooks.resourceserver
 
 import java.io.File
 import java.nio.file.Files
+import org.eclipse.jetty.servlet.{ServletHolder, ServletMapping}
+
 import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -59,6 +61,12 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   before {
     // Mount the servlet under test.
     addServlet(ResourceServlet(resolver, imageCache, directExecutionContext, 1, 0 millis, 100 millis, 250 millis), "/*")
+  }
+
+  after {
+    // Unmount the servlets.
+    servletContextHandler.getServletHandler.setServletMappings(new Array[ServletMapping](0))
+    servletContextHandler.getServletHandler.setServlets(new Array[ServletHolder](0))
   }
 
   override def afterAll() {
