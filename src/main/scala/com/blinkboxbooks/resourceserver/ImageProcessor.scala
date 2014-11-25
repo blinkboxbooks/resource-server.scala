@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import org.apache.commons.lang3.concurrent.BasicThreadFactory
 import org.imgscalr.Scalr
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 
 import Utils._
 import javax.imageio._
@@ -85,7 +85,7 @@ trait ImageProcessor {
  * Implementation of image processor that uses the imgscalr AsyncScalr class to perform
  * image processing in a thread pool with a limited number of threads.
  */
-class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Logging with TimeLogging {
+class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with StrictLogging with TimeLogging {
 
   import ThreadPoolImageProcessor._
 
@@ -106,7 +106,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Log
 
       if (inputImage == null) throw new IOException(s"Unable to decode image of type $outputFileType")
 
-      val originalImage = if (inputImage.getAlphaRaster() == null) inputImage else nonTransparentImage(inputImage)
+      val originalImage = if (inputImage.getAlphaRaster == null) inputImage else nonTransparentImage(inputImage)
 
       // Resize the image if a new size has been requested.
       for (

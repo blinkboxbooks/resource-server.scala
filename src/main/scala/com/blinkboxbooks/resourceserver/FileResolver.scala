@@ -1,23 +1,15 @@
 package com.blinkboxbooks.resourceserver
 
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InputStream
-import java.io.FilterInputStream
-import java.nio.file.Path
-import java.nio.file.Files
-import java.nio.file.FileSystems
-import java.nio.file.LinkOption
-import java.nio.file.AccessDeniedException
-import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
+import java.io.{IOException, InputStream}
+import java.nio.file.{AccessDeniedException, Files, LinkOption, NoSuchFileException, Path, Paths}
 import java.util.zip.ZipFile
+
+import com.typesafe.scalalogging.StrictLogging
+import org.apache.commons.io.IOUtils
+import org.apache.commons.io.input.ProxyInputStream
+
 import scala.collection.JavaConverters._
 import scala.util.Try
-import com.typesafe.scalalogging.slf4j.Logging
-import org.apache.commons.io.input.ProxyInputStream
-import org.apache.commons.io.IOUtils
 
 trait FileResolver {
 
@@ -32,9 +24,9 @@ trait FileResolver {
 /**
  * Class that knows how to resolve regular files, as well as files inside epub/Zip files.
  */
-class EpubEnabledFileResolver(root: Path) extends FileResolver with Logging {
+class EpubEnabledFileResolver(root: Path) extends FileResolver with StrictLogging {
 
-  import EpubEnabledFileResolver._
+  import com.blinkboxbooks.resourceserver.EpubEnabledFileResolver._
 
   if (!Files.isDirectory(root)) throw new IOException(s"Path must be a valid directory: $root")
 
