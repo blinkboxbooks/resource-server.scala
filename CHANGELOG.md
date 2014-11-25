@@ -1,5 +1,17 @@
 # Change log
 
+## 1.2.0 ([#47](https://git.mobcastdev.com/Platform/baldrick/pull/47) 2014-11-25 10:34:50)
+
+Now logs messages to Graylog
+
+### New features
+
+- Logs details of requests as well as debug info (when enabled) to Graylog
+
+### Improvements
+
+- Now uses Scala 2.11 and the latest versions of common libraries.
+
 ## 1.1.18 ([#46](https://git.mobcastdev.com/Platform/baldrick/pull/46) 2014-11-18 15:35:35)
 
 Add tests for If-Range header
