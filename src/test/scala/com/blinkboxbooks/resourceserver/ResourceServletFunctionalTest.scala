@@ -326,7 +326,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   test("Direct file access with Range header") {
     get("/test.png", headers = Map("Range" -> "bytes=100-")) {
-      assert(status === 200)
+      assert(status === 206)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length - 100
       assert(bodyBytes.size === expectedSize)
       assert(header.get("Content-Length") === Some(expectedSize.toString))
@@ -339,7 +339,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
       "If-Range" -> "\"ThisIsAnEtag\"",
       "Range" -> "bytes=100-"
     )) {
-      assert(status === 200)
+      assert(status === 206)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length - 100
       assert(bodyBytes.size === expectedSize)
       assert(header.get("Content-Length") === Some(expectedSize.toString))
@@ -349,7 +349,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   test("Get file inside epub file, with Range header") {
     get("/params;v=0/test.epub/images/test.png", headers = Map("Range" -> "bytes=100-")) {
-      assert(status === 200)
+      assert(status === 206)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test-epub/images/test.png")).length - 100
       assert(bodyBytes.size === expectedSize)
       assert(header.get("Content-Length") === Some(expectedSize.toString))
