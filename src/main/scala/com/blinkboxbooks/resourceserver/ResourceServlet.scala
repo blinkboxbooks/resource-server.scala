@@ -132,7 +132,6 @@ import scala.io.Source
       halt(404, "The requested resource does not exist here")
     }
 
-    val byteRange = Utils.range(Option(request.getHeader("Range")))
 
     val (originalExtension, targetExtension) = fileExtension(filename)
     val targetFileType = targetExtension
@@ -140,6 +139,9 @@ import scala.io.Source
         .getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
+
+    val byteRange = Utils.range(Option(request.getHeader("Range")))
+    status = if (byteRange.isUnlimited) 200 else 206
 
     // Look for cached file if requesting a transformed image.
     val cachedImage = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))

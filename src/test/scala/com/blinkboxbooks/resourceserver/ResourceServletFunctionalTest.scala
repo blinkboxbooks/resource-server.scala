@@ -334,6 +334,12 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  test("Direct file access with Range header, when file can't be read.") {
+    get("/unknown.png", headers = Map("Range" -> "bytes=100-")) {
+      assert(status === 404)
+    }
+  }
+
   test("Direct file access with If-Range header") {
     get("/test.png", headers = Map(
       "If-Range" -> "\"ThisIsAnEtag\"",

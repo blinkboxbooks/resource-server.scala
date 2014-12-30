@@ -58,9 +58,11 @@ object Utils {
     params.map { case (key, value) => key.toString + "=" + value.toString }.mkString(";")
 
   /** Value class for specifying optional limits. */
-  case class Range(offset: Option[Long], limit: Option[Long])
+  case class Range(offset: Option[Long], limit: Option[Long]) {
+    def isUnlimited: Boolean = this == Range.unlimited
+  }
   object Range {
-    def unlimited = Range(None, None)
+    val unlimited = Range(None, None)
   }
 
   /**
