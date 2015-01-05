@@ -40,8 +40,8 @@ Feature: Access files from within ePubs
     Then the "Content-Type" header is set to "<content type>"
 
     Examples: Files with important content types
-      | file type | content type           |
-      | CSS       | text/css;charset=utf-8 |
+      | file type | content type            |
+      | CSS       | text/css; charset=UTF-8 |
 
   @negative
   Scenario: Files that do not exist in ePubs
