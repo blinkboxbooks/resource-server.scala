@@ -35,42 +35,6 @@ class UtilsTest extends FunSuite {
     assert(canonicalUri("foo/bar.baz", settings) === "/params;img:g=nw;img:h=100;img:m=crop;img:q=42;img:w=140;v=0/foo/bar.baz")
   }
 
-  test("no byte range") {
-    assert(range(None) === Range.unlimited)
-  }
-
-  test("valid single byte ranges") {
-    assert(range(Some("bytes=0-0")) === Range(Some(0), Some(1l)))
-    assert(range(Some("bytes=0-1")) === Range(Some(0), Some(2l)))
-    assert(range(Some("bytes=-1")) === Range(None, Some(2l)))
-    assert(range(Some("bytes=123-456")) === Range(Some(123l), Some(456l - 123 + 1)))
-    assert(range(Some("bytes=123-")) === Range(Some(123l), None))
-  }
-
-  test("valid multiple byte ranges") {
-    // These aren't supported at the moment.
-    assert(range(Some("bytes=0-1,2-3")) === Range.unlimited)
-    assert(range(Some("bytes=-1,2-3")) === Range.unlimited)
-    assert(range(Some("bytes=-1,2-3,5-")) === Range.unlimited)
-    assert(range(Some("bytes=-1,2-3,5-6")) === Range.unlimited)
-  }
-
-  test("byte ranges with invalid syntax") {
-    // Invalid range strings are ignored.
-    assert(range(Some("")) === Range.unlimited)
-    assert(range(Some("byte=1-3")) === Range.unlimited)
-    assert(range(Some("bytes=")) === Range.unlimited)
-    assert(range(Some("bytes=xyz")) === Range.unlimited)
-    assert(range(Some("bytes=1.2")) === Range.unlimited)
-    assert(range(Some("bytes=1.2-3")) === Range.unlimited)
-    assert(range(Some("bytes=-3-4")) === Range.unlimited)
-    assert(range(Some("bytes=3-4-5")) === Range.unlimited)
-  }
-
-  test("byte ranges with negative length") {
-    assert(range(Some("byte=1-3")) === Range.unlimited)
-  }
-
   test("bounded input stream") {
     val input = "0123456"
     val testCases = Map(
