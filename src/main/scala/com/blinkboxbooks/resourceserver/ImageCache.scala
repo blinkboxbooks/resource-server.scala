@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption._
 import javax.imageio.ImageIO
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
-import com.blinkboxbooks.resourceserver.Utils._
+import com.blinkboxbooks.resourceserver.ManagedResources._
 import com.typesafe.scalalogging.StrictLogging
 import org.imgscalr.Scalr
 import org.imgscalr.Scalr.{Method, Mode}

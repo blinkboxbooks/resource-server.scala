@@ -16,7 +16,7 @@ import org.imgscalr.Scalr
 
 import com.typesafe.scalalogging.StrictLogging
 
-import Utils._
+import ManagedResources._
 import javax.imageio._
 import javax.imageio.stream._
 import resource._
@@ -242,6 +242,7 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Str
 
 }
 
+
 object ThreadPoolImageProcessor {
 
   val DefaultQuality = 0.85f
@@ -268,4 +269,12 @@ object ThreadPoolImageProcessor {
   }
 }
 
+object ManagedResources {
 
+  /** Make BufferedImages managed resources so they can be automatically flushed when no longer used. */
+  implicit def pooledConnectionResource[A <: BufferedImage] = new Resource[A] {
+    override def close(r: A) = r.flush()
+    override def toString = "Resource[java.awt.image.BufferedImage]"
+  }
+
+}

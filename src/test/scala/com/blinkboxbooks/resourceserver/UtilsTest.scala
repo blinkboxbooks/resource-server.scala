@@ -35,27 +35,6 @@ class UtilsTest extends FunSuite {
     assert(canonicalUri("foo/bar.baz", settings) === "/params;img:g=nw;img:h=100;img:m=crop;img:q=42;img:w=140;v=0/foo/bar.baz")
   }
 
-  test("bounded input stream") {
-    val input = "0123456"
-    val testCases = Map(
-      Range.unlimited -> input,
-      new Range(Some(0), None) -> input,
-      new Range(Some(0), Some(0)) -> "",
-      new Range(Some(0), Some(3)) -> "012",
-      new Range(Some(2), Some(3)) -> "234",
-      new Range(Some(5), Some(3)) -> "56",
-      new Range(Some(2), None) -> "23456",
-      new Range(Some(99999), None) -> "")
-
-    testCases.foreach {
-      case (range, expected) =>
-        val in = new ByteArrayInputStream(input.getBytes)
-        val bounded = boundedInputStream(in, range)
-        val result = Source.fromInputStream(bounded).getLines().mkString
-        assert(result === expected, s"Result for range $range should be $expected, got $result")
-    }
-  }
-
   test("get extension for filenames with no format conversion") {
     assert(fileExtension("foo.t") === (Some("t"), None))
     assert(fileExtension("f.t") === (Some("t"), None))

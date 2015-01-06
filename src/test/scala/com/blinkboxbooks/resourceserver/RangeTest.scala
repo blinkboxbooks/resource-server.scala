@@ -1,8 +1,10 @@
 package com.blinkboxbooks.resourceserver
 
+import java.io.ByteArrayInputStream
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
+import scala.io.Source
 
 @RunWith(classOf[JUnitRunner])
 class RangeTest extends FunSuite {
@@ -49,6 +51,27 @@ class RangeTest extends FunSuite {
 
   test("byte ranges with negative length") {
     assert(Range(Some("byte=1-3")) === Range.unlimited)
+  }
+
+  test("bounded input stream") {
+    val input = "0123456"
+    val testCases = Map(
+      Range.unlimited -> input,
+      new Range(Some(0), None) -> input,
+      new Range(Some(0), Some(0)) -> "",
+      new Range(Some(0), Some(3)) -> "012",
+      new Range(Some(2), Some(3)) -> "234",
+      new Range(Some(5), Some(3)) -> "56",
+      new Range(Some(2), None) -> "23456",
+      new Range(Some(99999), None) -> "")
+
+    testCases.foreach {
+      case (range, expected) =>
+        val in = new ByteArrayInputStream(input.getBytes)
+        val bounded = boundedInputStream(in, range)
+        val result = Source.fromInputStream(bounded).getLines().mkString
+        assert(result === expected, s"Result for range $range should be $expected, got $result")
+    }
   }
 
 }

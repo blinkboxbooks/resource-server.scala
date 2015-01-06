@@ -157,7 +157,7 @@ class ResourceServlet(resolver: FileResolver,
       response.headers += ("ETag" -> etag)
 
       // Truncate results if requested.
-      val boundedInput = boundedInputStream(inputStream, byteRange)
+      val boundedInput = Range.boundedInputStream(inputStream, byteRange)
 
       // Write resulting data.
       if (imageSettings.hasSettings || targetExtension.isDefined) {

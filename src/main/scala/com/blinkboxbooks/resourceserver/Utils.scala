@@ -1,11 +1,9 @@
 package com.blinkboxbooks.resourceserver
 
 import org.apache.commons.codec.digest.DigestUtils
-import org.apache.commons.io.input.BoundedInputStream
-import java.io.InputStream
 import java.awt.image.BufferedImage
-import scala.util.Try
 import resource.Resource
+import scala.util.Try
 
 /**
  * The traditional bag o' stuff that doesn't quite fit in anywhere else.
@@ -14,26 +12,6 @@ object Utils {
 
   /** Return hash of given string in hex format. */
   def stringHash(str: String) = DigestUtils.md5Hex(str)
-
-  /** Make BufferedImages managed resources so they can be automatically flushed when no longer used. */
-  implicit def pooledConnectionResource[A <: BufferedImage] = new Resource[A] {
-    override def close(r: A) = r.flush()
-    override def toString = "Resource[java.awt.image.BufferedImage]"
-  }
-
-  /**
-   * Given an InputStream, skip the necessary number of bytes in it, and
-   * return an InputStream that will only read bytes up to the given limit.
-   */
-  def boundedInputStream(inputStream: InputStream, range: Range) = {
-    // Skip bytes if there's an offset.
-    range.offset.foreach(offset => inputStream.skip(offset))
-    // Limit the number of bytes read if there's a limit.
-    range.limit match {
-      case None => inputStream
-      case Some(limit) => new BoundedInputStream(inputStream, limit)
-    }
-  }
 
   def canonicalUri(baseFilename: String, imageSettings: ImageSettings) = {
     var params = Map("v" -> "0")
