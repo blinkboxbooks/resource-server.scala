@@ -11,15 +11,15 @@ import javax.servlet.http.HttpServletRequest
 import com.blinkboxbooks.resourceserver.MatrixParameters._
 import com.blinkboxbooks.resourceserver.Utils._
 import com.typesafe.scalalogging.StrictLogging
-import org.joda.time.format.{ DateTimeFormat, ISODateTimeFormat }
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
+import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
 import resource._
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
  * A servlet that serves up files, either directly or from inside archive files (e.g. epubs and zips).

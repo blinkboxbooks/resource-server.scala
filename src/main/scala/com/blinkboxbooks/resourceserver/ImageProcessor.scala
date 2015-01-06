@@ -242,7 +242,6 @@ class ThreadPoolImageProcessor(threadCount: Int) extends ImageProcessor with Str
 
 }
 
-
 object ThreadPoolImageProcessor {
 
   val DefaultQuality = 0.85f
