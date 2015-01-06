@@ -22,15 +22,10 @@ object Range {
    * @return (offset, limit). The offset is 0 if not specified, the limit is None of not specified,
    * as a limit of 0 has a different meaning to "no limit".
    */
-  def apply(range: Option[String]): Range =
-    Try(range.map {
-      case RangePattern(startStr, endStr) => {
-        val start = parseLong(startStr)
-        val end = parseLong(endStr)
-        new Range(start, limit(start, end))
-      }
-      case _ => Range.unlimited
-    }).toOption.flatten.getOrElse(Range.unlimited)
+  def apply(rangeExpr: Option[String]): Range = rangeExpr.flatMap {
+    case RangePattern(startStr, endStr) => parseRange(startStr, endStr)
+    case _                              => None
+  }.getOrElse(Range.unlimited)
 
   /**
    * Given an InputStream, skip the necessary number of bytes in it, and
@@ -48,10 +43,13 @@ object Range {
 
   private val RangePattern = """^bytes=(\d+)-(\d*)$""".r
 
-  private def parseLong(str: String) = str match {
-    case "" => None
-    case _  => Some(str.toLong)
-  }
+  private def parseRange(startStr: String, endStr: String): Option[Range] = (for {
+    start <- parseOptionalLong(startStr)
+    end <- parseOptionalLong(endStr)
+  } yield Range(start, limit(start, end))).toOption
+
+  private def parseOptionalLong(str: String): Try[Option[Long]] =
+    Try(if (str == "") None else Some(str.toLong))
 
   private def limit(start: Option[Long], end: Option[Long]) = (start, end) match {
     case (Some(start), Some(end)) if end >= start => Some(end - start + 1)
