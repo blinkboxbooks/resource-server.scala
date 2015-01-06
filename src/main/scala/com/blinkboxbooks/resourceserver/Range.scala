@@ -17,7 +17,7 @@ object Range {
    * Get offset and limit based on parsing HTTP Range parameter as specified
    * in RFC 2616.
    *
-   * This implementation only supports a single range.
+   * This implementation only supports a single range, and does not support suffix ranges.
    *
    * @return (offset, limit). The offset is 0 if not specified, the limit is None of not specified,
    * as a limit of 0 has a different meaning to "no limit".
