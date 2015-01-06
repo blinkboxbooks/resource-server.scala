@@ -15,7 +15,6 @@ import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
-import resource._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,8 +28,9 @@ class ResourceServlet(resolver: FileResolver,
                       imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
   extends ScalatraServlet with StrictLogging with HttpMonitoring with TimeLogging {
 
-  import com.blinkboxbooks.resourceserver.Gravity._
-  import com.blinkboxbooks.resourceserver.ResourceServlet._
+  import Gravity._
+  import ResourceServlet._
+  import resource._
 
   import scala.io.Source
 
@@ -59,13 +59,13 @@ class ResourceServlet(resolver: FileResolver,
     monitor(request, response) {
       val filename = multiParams("splat").head
       logger.debug(s"Catch-all fallback for direct file access: $filename")
-      handleFileRequest(URLDecoder.decode(filename, "UTF-8"))
+      val byteRange = Range(Option(request.getHeader("Range")))
+      handleFileRequest(URLDecoder.decode(filename, "UTF-8"), byteRange)
     }
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params(?:;|%3[Bb])([^/]*)/(.*)""".r) {
-    import com.blinkboxbooks.resourceserver.Utils._
     monitor(request, response) {
       val captures = multiParams("captures")
       val params = URLDecoder.decode(captures(0), "UTF-8")
@@ -110,9 +110,9 @@ class ResourceServlet(resolver: FileResolver,
 
         val imageSettings = new ImageSettings(width, height, mode, quality, gravity)
         logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
-        handleFileRequest(filename, imageSettings)
+        handleFileRequest(filename, byteRange = None, imageSettings)
       } else {
-        handleFileRequest(filename)
+        handleFileRequest(filename, byteRange = None)
       }
 
     }
@@ -126,7 +126,7 @@ class ResourceServlet(resolver: FileResolver,
   }
 
   /** Serve up file, by looking it up in a virtual file system and applying any transforms. */
-  private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {
+  private def handleFileRequest(filename: String, byteRange: Option[Range], imageSettings: ImageSettings = unchanged) {
     if (filename.endsWith(".key")) {
       logger.info(s"$filename rejected as I never send keyfiles")
       halt(404, "The requested resource does not exist here")
@@ -138,8 +138,6 @@ class ResourceServlet(resolver: FileResolver,
         .getOrElse(halt(400, s"Requested file '$filename' has no extension")))
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
-
-    val byteRange = Range(Option(request.getHeader("Range")))
 
     // Set the status code that Scalatra will use for the response according to whether it's full or partial.
     status = byteRange.fold(200)(_ => 206)
