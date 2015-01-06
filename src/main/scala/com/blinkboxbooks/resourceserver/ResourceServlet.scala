@@ -142,7 +142,7 @@ class ResourceServlet(resolver: FileResolver,
     val byteRange = Range(Option(request.getHeader("Range")))
 
     // Set the status code that Scalatra will use for the response according to whether it's full or partial.
-    status = if (byteRange.isUnlimited) 200 else 206
+    status = byteRange.fold(200)(_ => 206)
 
     // Look for cached file if requesting a transformed image.
     val cachedImage = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))

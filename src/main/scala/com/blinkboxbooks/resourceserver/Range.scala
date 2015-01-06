@@ -4,14 +4,10 @@ import java.io.InputStream
 import org.apache.commons.io.input.BoundedInputStream
 import scala.util.Try
 
-/** Value class for specifying optional limits. */
-case class Range(offset: Option[Long], limit: Option[Long]) {
-  def isUnlimited: Boolean = this == Range.unlimited
-}
+/** Value class that represents the offset of limit in prefix byte ranges. */
+case class Range(offset: Long, limit: Option[Long])
 
 object Range {
-
-  val unlimited = Range(None, None)
 
   /**
    * Get offset and limit based on parsing HTTP Range parameter as specified
@@ -22,20 +18,20 @@ object Range {
    * @return (offset, limit). The offset is 0 if not specified, the limit is None of not specified,
    * as a limit of 0 has a different meaning to "no limit".
    */
-  def apply(rangeExpr: Option[String]): Range = rangeExpr.flatMap {
+  def apply(rangeExpr: Option[String]): Option[Range] = rangeExpr.flatMap {
     case RangePattern(startStr, endStr) => parseRange(startStr, endStr)
     case _                              => None
-  }.getOrElse(Range.unlimited)
+  }
 
   /**
    * Given an InputStream, skip the necessary number of bytes in it, and
    * return an InputStream that will only read bytes up to the given limit.
    */
-  def boundedInputStream(inputStream: InputStream, range: Range) = {
+  def boundedInputStream(inputStream: InputStream, range: Option[Range]) = {
     // Skip bytes if there's an offset.
-    range.offset.foreach(offset => inputStream.skip(offset))
+    range.foreach(r => inputStream.skip(r.offset))
     // Limit the number of bytes read if there's a limit.
-    range.limit match {
+    range.flatMap(_.limit) match {
       case None        => inputStream
       case Some(limit) => new BoundedInputStream(inputStream, limit)
     }
@@ -44,18 +40,18 @@ object Range {
   private val RangePattern = """^bytes=(\d+)-(\d*)$""".r
 
   private def parseRange(startStr: String, endStr: String): Option[Range] = (for {
-    start <- parseOptionalLong(startStr)
+    start <- parseLong(startStr)
     end <- parseOptionalLong(endStr)
   } yield Range(start, limit(start, end))).toOption
+
+  private def parseLong(str: String): Try[Long] = Try(str.toLong)
 
   private def parseOptionalLong(str: String): Try[Option[Long]] =
     Try(if (str == "") None else Some(str.toLong))
 
-  private def limit(start: Option[Long], end: Option[Long]) = (start, end) match {
-    case (Some(start), Some(end)) if end >= start => Some(end - start + 1)
-    case (Some(start), None)                      => None
-    case (None, Some(end))                        => Some(end + 1)
-    case _                                        => None
+  private def limit(start: Long, end: Option[Long]) = end match {
+    case Some(end) if end >= start => Some(end - start + 1)
+    case None                      => None
   }
 
 }

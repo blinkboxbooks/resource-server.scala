@@ -32,7 +32,7 @@ object Utils {
     "/params;" + paramsToString(sortedParams) + "/" + baseFilename
   }
 
-  def paramsToString(params: List[(String, String)]): String =
+  private def paramsToString(params: List[(String, String)]): String =
     params.map { case (key, value) => key.toString + "=" + value.toString }.mkString(";")
 
   /**
@@ -55,4 +55,3 @@ object Utils {
   private val PRODUCABLE_IMAGE_FORMATS = Set("png", "jpg", "jpeg", "gif")
 
 }
-
