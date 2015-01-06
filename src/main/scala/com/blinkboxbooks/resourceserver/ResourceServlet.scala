@@ -141,6 +141,8 @@ import scala.io.Source
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
 
     val byteRange = Utils.range(Option(request.getHeader("Range")))
+
+    // Set the status code that Scalatra will use for the response according to whether it's full or partial.
     status = if (byteRange.isUnlimited) 200 else 206
 
     // Look for cached file if requesting a transformed image.
