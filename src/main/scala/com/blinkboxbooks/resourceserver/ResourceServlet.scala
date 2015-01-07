@@ -127,7 +127,7 @@ class ResourceServlet(resolver: FileResolver,
 
   /** Serve up file, by looking it up in a virtual file system and applying any transforms. */
   private def handleFileRequest(filename: String, byteRange: Option[Range], imageSettings: ImageSettings = unchanged) {
-    if (filename.endsWith(".key")) {
+    if (Paths.get(filename).normalize.toString.endsWith(".key")) {
       logger.info(s"$filename rejected as I never send keyfiles")
       halt(404, "The requested resource does not exist here")
     }

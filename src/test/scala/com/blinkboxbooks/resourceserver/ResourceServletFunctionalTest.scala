@@ -230,8 +230,33 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
+  val encodedFilename = KeyFile.replaceAll("e", "%65")
+  val keyfilePaths = Seq(
+    s"/$KeyFile",
+    s"/$encodedFilename",
+    s"/$KeyFile/bar/..",
+    s"/$encodedFilename/bar/..",
+    s"/content/../$KeyFile",
+    s"/content/../$KeyFile/bar/..")
+
   test("Try to get key file") {
-    get("/" + KeyFile) {
+    for (path <- keyfilePaths) {
+      get(path) {
+        assert(status === 404, s"path=$path")
+      }
+    }
+  }
+
+  test("Try to get key file using params") {
+    def withParameters(filename: String) = "/params;v=0" + filename
+    for (path <- keyfilePaths.map(withParameters))
+      get(path) {
+        assert(status === 404, s"path=$path")
+      }
+  }
+
+  test("Try to get key file using params and relative path") {
+    get("/params;v=0/content/../" + KeyFile) {
       assert(status === 404)
     }
   }
