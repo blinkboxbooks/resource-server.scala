@@ -41,8 +41,14 @@ directory to serve up files from.
 The run it using the commands:
 
 ```
+$ sbt run
+```
+
+Or, for automatic restart on change while developing, use:
+
+```
 $ sbt
-> container:start
+> ~re-start
 ```
 
 ### Building a standalone jar file ###
