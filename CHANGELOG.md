@@ -1,5 +1,14 @@
 # Change log
 
+## 1.2.2 ([#49](https://git.mobcastdev.com/Platform/baldrick/pull/49) 2015-01-07 16:37:32)
+
+PT-553 Remove potential exploit that allows access to keyfiles
+
+### Bugfix:
+
+- Normalise paths before checking for key file access, so that relative paths can't be used as a workaround to access key files.
+
+
 ## 1.2.1 ([#48](https://git.mobcastdev.com/Platform/baldrick/pull/48) 2015-01-07 11:04:13)
 
 PT-23 Status code for partial responses
