@@ -1,5 +1,15 @@
 # Change log
 
+## 1.2.3 ([#50](https://git.mobcastdev.com/Platform/baldrick/pull/50) 2015-01-07 17:31:55)
+
+Removed redundant test
+
+### Improvement
+
+- Removed test that checked for partial download of processed files, as support for this was removed in an earlier PR.
+
+
+
 ## 1.2.2 ([#49](https://git.mobcastdev.com/Platform/baldrick/pull/49) 2015-01-07 16:37:32)
 
 PT-553 Remove potential exploit that allows access to keyfiles
