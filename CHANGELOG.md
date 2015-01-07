@@ -1,5 +1,19 @@
 # Change log
 
+## 1.2.1 ([#48](https://git.mobcastdev.com/Platform/baldrick/pull/48) 2015-01-07 11:04:13)
+
+PT-23 Status code for partial responses
+
+### Bugfixes:
+
+- Return 206 instead of 200 for partial responses triggered by Range header in request.
+- Remove broken support for suffix ranges.
+
+### Improvements:
+
+- Refactored Range class and its usage.
+
+
 ## 1.2.0 ([#47](https://git.mobcastdev.com/Platform/baldrick/pull/47) 2014-11-25 10:34:50)
 
 Now logs messages to Graylog
