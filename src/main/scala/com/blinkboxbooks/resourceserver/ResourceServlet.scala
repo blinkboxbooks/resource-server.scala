@@ -15,7 +15,6 @@ import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatra.ScalatraServlet
 import org.scalatra.util.io.copy
-import resource._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,13 +25,14 @@ import scala.util.{Failure, Success, Try}
  * Image files can optionally be transformed, e.g. resized.
  */
 class ResourceServlet(resolver: FileResolver,
-  imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
+                      imageProcessor: ImageProcessor, cache: ImageCache, cacheingContext: ExecutionContext)
   extends ScalatraServlet with StrictLogging with HttpMonitoring with TimeLogging {
 
-  import com.blinkboxbooks.resourceserver.Gravity._
-  import com.blinkboxbooks.resourceserver.ResourceServlet._
+  import Gravity._
+  import ResourceServlet._
+  import resource._
 
-import scala.io.Source
+  import scala.io.Source
 
   private val dateTimeFormat = DateTimeFormat.forPattern("E, d MMM yyyy HH:mm:ss 'GMT'")
     .withLocale(Locale.US)
@@ -59,13 +59,13 @@ import scala.io.Source
     monitor(request, response) {
       val filename = multiParams("splat").head
       logger.debug(s"Catch-all fallback for direct file access: $filename")
-      handleFileRequest(URLDecoder.decode(filename, "UTF-8"))
+      val byteRange = Range(Option(request.getHeader("Range")))
+      handleFileRequest(URLDecoder.decode(filename, "UTF-8"), byteRange)
     }
   }
 
   /** Access to all files, including inside archives, and with optional image re-sizing. */
   get("""^\/params(?:;|%3[Bb])([^/]*)/(.*)""".r) {
-    import com.blinkboxbooks.resourceserver.Utils._
     monitor(request, response) {
       val captures = multiParams("captures")
       val params = URLDecoder.decode(captures(0), "UTF-8")
@@ -80,10 +80,10 @@ import scala.io.Source
       if (requestIsForImage) {
         // Check that version is well known, otherwise return an error.
         imageParams.get("v") match {
-          case Some("0") => // OK.
+          case Some("0")                         => // OK.
           case Some(v) if Try(v.toInt).isFailure => halt(400, s"Server version should be specified as an integer value")
-          case Some(v) => halt(400, s"Server version $v is not yet specified")
-          case None => halt(400, "No version specified")
+          case Some(v)                           => halt(400, s"Server version $v is not yet specified")
+          case None                              => halt(400, "No version specified")
         }
 
         val width = intParam(imageParams, "img:w")
@@ -99,22 +99,22 @@ import scala.io.Source
           halt(400, "Quality parameter must be between 0 and 100")
 
         val mode = imageParams.get("img:m") map {
-          case "scale" => ScaleWithoutUpscale
-          case "scale!" => ScaleWithUpscale
-          case "crop" => Crop
+          case "scale"   => ScaleWithoutUpscale
+          case "scale!"  => ScaleWithUpscale
+          case "crop"    => Crop
           case "stretch" => Stretch
-          case m @ _ => invalidParameter("img:m", m)
+          case m @ _     => invalidParameter("img:m", m)
         }
 
         val gravity = gravityParam(imageParams, "img:g")
 
         val imageSettings = new ImageSettings(width, height, mode, quality, gravity)
         logger.debug(s"Request for non-direct file access: $filename, settings=$imageSettings")
-        handleFileRequest(filename, imageSettings)
+        handleFileRequest(filename, byteRange = None, imageSettings)
       } else {
-        handleFileRequest(filename)
+        handleFileRequest(filename, byteRange = None)
       }
-      
+
     }
   }
 
@@ -126,13 +126,11 @@ import scala.io.Source
   }
 
   /** Serve up file, by looking it up in a virtual file system and applying any transforms. */
-  private def handleFileRequest(filename: String, imageSettings: ImageSettings = unchanged) {
+  private def handleFileRequest(filename: String, byteRange: Option[Range], imageSettings: ImageSettings = unchanged) {
     if (filename.endsWith(".key")) {
       logger.info(s"$filename rejected as I never send keyfiles")
       halt(404, "The requested resource does not exist here")
     }
-
-    val byteRange = Utils.range(Option(request.getHeader("Range")))
 
     val (originalExtension, targetExtension) = fileExtension(filename)
     val targetFileType = targetExtension
@@ -141,10 +139,13 @@ import scala.io.Source
 
     val baseFilename = if (targetExtension.isDefined) filename.dropRight(targetExtension.get.size + 1) else filename
 
+    // Set the status code that Scalatra will use for the response according to whether it's full or partial.
+    status = byteRange.fold(200)(_ => 206)
+
     // Look for cached file if requesting a transformed image.
     val cachedImage = imageSettings.maximumDimension.flatMap(size => cache.getImage(baseFilename, size))
     if (cachedImage.isDefined) {
-      response.headers += (CACHE_INDICATION_HEADER -> "true") 
+      response.headers += (CACHE_INDICATION_HEADER -> "true")
     }
 
     for (inputStream <- managed(cachedImage.getOrElse(checkedInput(resolver.resolve(baseFilename))))) {
@@ -154,7 +155,7 @@ import scala.io.Source
       response.headers += ("ETag" -> etag)
 
       // Truncate results if requested.
-      val boundedInput = boundedInputStream(inputStream, byteRange)
+      val boundedInput = Range.boundedInputStream(inputStream, byteRange)
 
       // Write resulting data.
       if (imageSettings.hasSettings || targetExtension.isDefined) {
@@ -207,7 +208,7 @@ import scala.io.Source
   private def enqueueImage(filename: String) =
     Try(Future { cache.addImage(filename) }(cacheingContext)) match {
       case Failure(e: RejectedExecutionException) => logger.warn("Failed to enqueue image for caching: " + e.getMessage)
-      case _ =>
+      case _                                      =>
     }
 
 }
@@ -219,7 +220,7 @@ object ResourceServlet {
 
   /** Factory method for creating a servlet backed by a file system. */
   def apply(resolver: FileResolver, cache: ImageCache, cacheingContext: ExecutionContext,
-    numResizingThreads: Int, info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
+            numResizingThreads: Int, info: Duration, warning: Duration, err: Duration): ScalatraServlet = {
 
     trait Thresholds extends TimeLoggingThresholds {
       override def infoThreshold = info

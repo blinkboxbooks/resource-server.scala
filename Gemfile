@@ -1,6 +1,5 @@
 source "http://artifactory.blinkbox.local/artifactory/api/gems/bbb-gems/" 
 source "http://artifactory.blinkbox.local/artifactory/api/gems/rubygems/"
-ruby "2.0.0"
 
 group :test do
   gem "rake"

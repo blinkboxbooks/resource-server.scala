@@ -183,7 +183,7 @@ class ResourceServletFunctionalTest extends ScalatraSuite
   }
 
   // CP-1701
-  test("ETag header value is surrounded by quote marks"){
+  test("ETag header value is surrounded by quote marks") {
     get("/params;v=0/test.epub/images/test.jpeg") {
       assert(status === 200)
       val etag = header("ETag")
@@ -269,14 +269,14 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
-  test("Mode \"scale\" does not upscale images"){
+  test("Mode \"scale\" does not upscale images") {
     get(s"/params;img:q=85;img:w=1000;img:h=1000;img:m=scale;v=0/test.epub/images/test.png") {
       assert(status === 200)
       checkImage(response.inputStream, "png", 320, 200)
     }
   }
 
-  test("Mode \"scale!\" does upscale images"){
+  test("Mode \"scale!\" does upscale images") {
     // CP-1789
     // should perform the largest possible transformation to fit in the bounding box
     get(s"/params;img:q=85;img:w=640;img:h=500;img:m=scale!;v=0/test.epub/images/test.png") {
@@ -289,20 +289,19 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
-  test("Mode \"scale!\" is the default resize mode"){
+  test("Mode \"scale!\" is the default resize mode") {
     get(s"/params;img:q=85;img:w=640;img:h=500;v=0/test.epub/images/test.png") {
       assert(status === 200)
       checkImage(response.inputStream, "png", 640, 400)
     }
   }
 
-  test("cropping image to smaller aspect ratio works"){
+  test("cropping image to smaller aspect ratio works") {
     get(s"/params;img:q=85;img:w=170;img:h=45;v=0;img:m=crop/test.epub/images/test.png") {
       assert(status === 200)
       checkImage(response.inputStream, "png", 170, 45)
     }
   }
-
 
   test("Check against cross-site scripting attack") {
     val paths = List(
@@ -326,20 +325,49 @@ class ResourceServletFunctionalTest extends ScalatraSuite
 
   test("Direct file access with Range header") {
     get("/test.png", headers = Map("Range" -> "bytes=100-")) {
-      assert(status === 200)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length - 100
-      assert(bodyBytes.size === expectedSize)
-      assert(header.get("Content-Length") === Some(expectedSize.toString))
+      assert(status === 206 &&
+        bodyBytes.size === expectedSize &&
+        header.get("Content-Length") === Some(expectedSize.toString))
       checkIsCacheable()
+    }
+  }
+
+  test("Direct file access with Range header request that exceeds size of file") {
+    get("/test.png", headers = Map("Range" -> "bytes=9999999-")) {
+      // This isn't quite right according to the RFC - it ought to return a 
+      // status of 416, but this requires knowing a priory the size of the returned data.
+      assert(status === 206 &&
+        bodyBytes.size === 0 &&
+        header.get("Content-Length") === Some(0.toString))
+      checkIsCacheable()
+    }
+  }
+
+  test("Direct file access with unsupported Range header") {
+    for (rangeHeader <- Seq("bytes=-100", "bytes=-", "bytes=XYZ-")) {
+      get("/test.png", headers = Map("Range" -> rangeHeader)) {
+        // Should get full response.
+        val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length
+        assert(status === 200 &&
+          bodyBytes.size === expectedSize &&
+          header.get("Content-Length") === Some(expectedSize.toString), s"rangeHeader=$rangeHeader")
+        checkIsCacheable()
+      }
+    }
+  }
+
+  test("Direct file access with Range header, when file can't be read.") {
+    get("/unknown.png", headers = Map("Range" -> "bytes=100-")) {
+      assert(status === 404)
     }
   }
 
   test("Direct file access with If-Range header") {
     get("/test.png", headers = Map(
       "If-Range" -> "\"ThisIsAnEtag\"",
-      "Range" -> "bytes=100-"
-    )) {
-      assert(status === 200)
+      "Range" -> "bytes=100-")) {
+      assert(status === 206)
       val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test.png")).length - 100
       assert(bodyBytes.size === expectedSize)
       assert(header.get("Content-Length") === Some(expectedSize.toString))
@@ -347,10 +375,11 @@ class ResourceServletFunctionalTest extends ScalatraSuite
     }
   }
 
-  test("Get file inside epub file, with Range header") {
+  test("Get file with params and Range header") {
     get("/params;v=0/test.epub/images/test.png", headers = Map("Range" -> "bytes=100-")) {
+      // Should ignore range header here and return full response.
       assert(status === 200)
-      val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test-epub/images/test.png")).length - 100
+      val expectedSize = IOUtils.toByteArray(getClass.getResourceAsStream("/test-epub/images/test.png")).length
       assert(bodyBytes.size === expectedSize)
       assert(header.get("Content-Length") === Some(expectedSize.toString))
       checkIsCacheable()
