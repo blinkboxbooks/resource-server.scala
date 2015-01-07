@@ -255,18 +255,6 @@ class ResourceServletFunctionalTest extends ScalatraSuite
       }
   }
 
-  test("Try to get key file using params and relative path") {
-    get("/params;v=0/content/../" + KeyFile) {
-      assert(status === 404)
-    }
-  }
-
-  test("Try to get key file from inside an epub") {
-    get("/params;v=0/test.epub/test/" + KeyFile) {
-      assert(status === 404)
-    }
-  }
-
   test("Try to get file in archive that doesn't exist") {
     get("/params;v=0/unknown.epub/test/unknown.html") {
       assert(status === 404)
