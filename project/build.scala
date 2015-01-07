@@ -1,5 +1,6 @@
-import sbt.Keys._
 import sbt._
+import spray.revolver.RevolverPlugin._
+import sbt.Keys._
 
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks.platform.services"
@@ -11,7 +12,7 @@ object ResourceServerBuild extends Build {
   lazy val project = Project(
     "resource-server",
     file("."),
-    settings = Defaults.defaultSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ Revolver.settings ++ Seq(
       organization := Organization,
       name := Name,
       version := Version,
