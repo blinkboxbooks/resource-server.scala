@@ -1,6 +1,6 @@
-import org.scalatra.sbt._
-import sbt.Keys._
 import sbt._
+import spray.revolver.RevolverPlugin._
+import sbt.Keys._
 
 object ResourceServerBuild extends Build {
   val Organization = "com.blinkboxbooks.platform.services"
@@ -12,13 +12,12 @@ object ResourceServerBuild extends Build {
   lazy val project = Project(
     "resource-server",
     file("."),
-    settings = Defaults.defaultSettings ++ ScalatraPlugin.scalatraWithJRebel ++ Seq(
+    settings = Defaults.defaultSettings ++ Revolver.settings ++ Seq(
       organization := Organization,
       name := Name,
       version := Version,
       scalaVersion := ScalaVersion,
       resolvers += Classpaths.typesafeReleases,
-      mainClass in (Compile, packageBin) := Some("com.blinkboxbooks.resourceserver.JettyLauncher"),
       publishArtifact in (Compile, packageDoc) := false, // Don’t publish bits we don't care about.
       publishArtifact in (Compile, packageSrc) := false,
       packageOptions in (Compile, packageBin) += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "."),
@@ -26,8 +25,8 @@ object ResourceServerBuild extends Build {
         "org.scalatra"              %% "scalatra"            % ScalatraVersion,
         "org.scalatra"              %% "scalatra-specs2"     % ScalatraVersion       % Test,
         "org.scalatra"              %% "scalatra-scalatest"  % ScalatraVersion       % Test,
-        "org.eclipse.jetty"         %  "jetty-webapp"        % "9.2.5.v20141112"     % "container;compile",
-        "org.eclipse.jetty.orbit"   %  "javax.servlet"       % "3.0.0.v201112011016" % "container;provided;test" artifacts Artifact("javax.servlet", "jar", "jar"),
+        "org.eclipse.jetty"         %  "jetty-webapp"        % "9.2.5.v20141112"     % "compile",
+        "org.eclipse.jetty.orbit"   %  "javax.servlet"       % "3.0.0.v201112011016" % "provided;test" artifacts Artifact("javax.servlet", "jar", "jar"),
         "commons-codec"             %  "commons-codec"       % "1.10",
         "com.mortennobel"           %  "java-image-scaling"  % "0.8.5",
         "junit"                     %  "junit"               % "4.11"                % Test,
