@@ -1,5 +1,14 @@
 # Change log
 
+## 1.2.4 ([#51](https://git.mobcastdev.com/Platform/baldrick/pull/51) 2015-01-08 09:53:28)
+
+Remove scalatra-sbt plugin
+
+### Improvement
+
+- Remove scalatra-sbt plugin, replace it with sbt-revolver instead.
+
+
 ## 1.2.3 ([#50](https://git.mobcastdev.com/Platform/baldrick/pull/50) 2015-01-07 17:31:55)
 
 Removed redundant test
