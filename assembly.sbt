@@ -1,6 +1,3 @@
-import AssemblyKeys._ // put this at the top of the file
-
-rpmPrepSettings
 
 mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
   {

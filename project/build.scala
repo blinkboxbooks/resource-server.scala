@@ -3,7 +3,7 @@ import spray.revolver.RevolverPlugin._
 import sbt.Keys._
 
 object ResourceServerBuild extends Build {
-  val Organization = "com.blinkboxbooks.platform.services"
+  val Organization = "com.blinkbox.books"
   val Name = "resource-server"
   val Version = scala.io.Source.fromFile("VERSION").mkString.trim
   val ScalaVersion = "2.11.4"

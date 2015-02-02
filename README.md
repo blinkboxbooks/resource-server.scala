@@ -1,6 +1,6 @@
-# scala-resource-server
+# resource-server
 
-An experimental implementation of a resource server written in Scala
+A service for serving ePub files and related content, including dynamically sized images.
 
 ## Installation ##
 
@@ -8,9 +8,7 @@ To install the resource server on a host, you need to perform the following step
 
 Get a copy of the JAR file that contains the version you want to install, called resource-server-assembly-n.n.n.jar.
 
-Create a configuration for the service by putting a properties file called "resource-server.properties" in the same location as the JAR file.
-There's [an example configuration here](src/main/resources/resource-server.properties.example) that you can use as a starting point.
-The following properties **must** be set:
+Create a configuration file `application.conf` which sets the following properties:
 
 * data_dir (REQUIRED): This specifies the root directory that contains the files to be served up by the service.
 * cache.directory (REQUIRED): This specifies a directory that will contain a cache of smaller versions of images.
@@ -72,9 +70,10 @@ You must insure you have libpng and imagemagick installed, then you can follow t
 
 ```
 $ brew install libpng imagemagick
-$ bundle
-$ cucumber
+$ MOUNT_DIR=<image directory> bundle exec cucumber
 ```
+
+*NOTE:* The image directory given to the Cucumber tests *must* match the corresponding setting in the `application.conf` file used with the service. 
 
 ## Running performance tests
 
