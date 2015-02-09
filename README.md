@@ -134,4 +134,4 @@ $ MOUNT_DIR=<image directory> bundle exec cucumber
 
 ## Running Gatling tests
 
-The service has some performance tests written using [Gatling](http://gatling.io). See [gatling.md](/performance-tests/images/gatling.md) for details on how these work and how to run them.
+The service has some performance tests written using [Gatling](http://gatling.io). See [gatling.md](/performance-tests/gatling.md) for details on how these work and how to run them.
