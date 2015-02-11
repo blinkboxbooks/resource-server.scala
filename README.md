@@ -109,7 +109,7 @@ Tests show that this can reduce request times, for example from ~120 ms to <20 m
 
 The resource server builds as a standalone Jar file using `sbt`.
 
-It uses the common Blinkbox Books conventions and approaches to configuration, metrics, health endpoints etc., see [the common-config library](/blinkboxbooks/common-config.scala) for details.
+It uses the common Blinkbox Books conventions and approaches to configuration, metrics, health endpoints etc., see [the common-config library](https://github.com/blinkboxbooks/common-config.scala) for details.
 
 See the [application.conf](/src/main/resources/application.conf) file for properties that need to be provided, and [reference.conf](/src/main/resources/reference.conf) for settings that can optionally be overridden.
 
